@@ -9,6 +9,7 @@ build/
 # Local configuration and secrets
 .env
 .env.*
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
@@ -24,10 +25,8 @@ build/
 *secrets*.json
 *token*.json
 *service-account*.json
-*.codex-logs
-*.agents
-*.github/workflows
-.github/
+/.codex-logs/
+/.agents/
 
 # AIMANA Local Storage (Large binaries & Database)
 # This folder contains your uploads and the SQLite file which often exceed GitHub's 100MB limit.
@@ -45,6 +44,12 @@ yarn-error.log*
 *.log
 *.bak
 *.backup
+.eslintcache
+*.tsbuildinfo
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
 
 # Archives and local exports
 *.zip
@@ -73,5 +78,6 @@ design-concept-1/
 
 # Local temporary files
 /.tmp/
+.vite/
 tmp_*
 *.timestamp-*.mjs
