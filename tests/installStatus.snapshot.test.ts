@@ -34,6 +34,7 @@ const loadInstallStatusModule = async (scenario: InstallScenario = {}) => {
     ...originalEnv,
     NODE_ENV: scenario.production ? 'production' : 'development',
     API_KEY: '',
+    POLLINATIONS_APP_KEY: '',
     POLLINATIONS_API_KEY: '',
     CHAT_WEB_SEARCH_PROVIDER: '',
     TAVILY_API_KEY: '',

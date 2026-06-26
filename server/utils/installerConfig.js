@@ -37,6 +37,15 @@ const CONFIG_FIELDS = [
         impact: 'Without this, Google-backed AI generation and chat routes stay unavailable.'
     },
     {
+        key: 'POLLINATIONS_APP_KEY',
+        label: 'Pollinations App Key',
+        category: 'ai',
+        kind: 'text',
+        required: false,
+        description: 'Publishable Pollinations BYOP app key (`pk_...`) used to identify the app in user authorization flows.',
+        impact: 'This does not replace `POLLINATIONS_API_KEY` for backend generation; users must authorize BYOP before their own credits can be spent.'
+    },
+    {
         key: 'POLLINATIONS_API_KEY',
         label: 'Pollinations Key',
         category: 'ai',

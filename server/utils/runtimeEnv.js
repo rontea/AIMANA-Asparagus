@@ -36,5 +36,6 @@ export const getRuntimeEnvValue = (key, fallback = '') => {
 };
 
 export const getRuntimePollinationsApiKey = () => getRuntimeEnvValue('POLLINATIONS_API_KEY', '');
+export const getRuntimePollinationsAppKey = () => getRuntimeEnvValue('POLLINATIONS_APP_KEY', '');
 export const getRuntimeAirforceApiKey = () => getRuntimeEnvValue('AIRFORCE_API_KEY', '');
 export const getRuntimeNvidiaApiKey = () => getRuntimeEnvValue('NVIDIA_API_KEY', '');

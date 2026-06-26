@@ -148,6 +148,7 @@ const main = async () => {
     const passthroughFlags = [
         'auth-secret',
         'api-key',
+        'pollinations-app-key',
         'pollinations-api-key',
         'airforce-api-key',
         'google-client-id',
@@ -159,6 +160,7 @@ const main = async () => {
     const keyMap = {
         'auth-secret': 'AUTH_SECRET',
         'api-key': 'API_KEY',
+        'pollinations-app-key': 'POLLINATIONS_APP_KEY',
         'pollinations-api-key': 'POLLINATIONS_API_KEY',
         'airforce-api-key': 'AIRFORCE_API_KEY',
         'google-client-id': 'GOOGLE_CLIENT_ID',
