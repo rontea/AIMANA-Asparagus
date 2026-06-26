@@ -3174,6 +3174,19 @@ router.post('/registry/sync/pollinations-audio', requireAdmin, async (req, res) 
             }
         }
 
+        if (syncEntries.length > 0) {
+            const placeholders = syncEntries.map(() => '?').join(',');
+            await dbRun(
+                `DELETE FROM custom_engines
+                 WHERE provider = 'pollinations'
+                   AND category = 'Audio'
+                   AND isSystem = 1
+                   AND json_extract(configJson, '$.audioSource') = 'pollinations/audio/models'
+                   AND id NOT IN (${placeholders})`,
+                syncEntries.map((entry) => entry.id)
+            );
+        }
+
         await logSystemEvent(
             'INFO',
             'REGISTRY',

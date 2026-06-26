@@ -129,3 +129,49 @@ test('audio transcription respects the explicit transcription flag from AI Creat
     assert.equal(res.headers['Content-Type'], 'application/json');
     assert.deepEqual(JSON.parse(String(res.body || '{}')), { text: 'flagged transcription text' });
 });
+
+test('audio TTS fills a default response format for stale Pollinations GET configs', async () => {
+    const fetchCalls = [];
+
+    globalThis.fetch = async (url, init = {}) => {
+        fetchCalls.push({ url: String(url || ''), init });
+        return new Response(new Uint8Array([1, 2, 3]), {
+            status: 200,
+            headers: { 'content-type': 'audio/mpeg' }
+        });
+    };
+
+    const engine = {
+        id: 'pollinations-qwen3-tts',
+        label: 'Qwen3 TTS',
+        provider: 'pollinations',
+        category: 'Audio',
+        upstreamId: 'qwen3-tts',
+        requestMethod: 'GET',
+        requestUrl: 'https://gen.pollinations.ai/audio/{{prompt}}?model={{upstreamId}}',
+        requestHeaders: '{"Accept":"audio/*"}',
+        requestBodyTemplate: '',
+        responsePath: '',
+        configJson: JSON.stringify({
+            textInputModalities: ['text'],
+            textOutputModalities: ['audio']
+        }),
+        apiKey: ''
+    };
+
+    const payload = {
+        prompt: 'hello from aimana',
+        dynamicParams: {}
+    };
+
+    const res = createMockRes();
+
+    await __proxyTestUtils.orchestrateInference(engine, payload, res, 'anonymous', null);
+
+    assert.equal(fetchCalls.length, 1);
+    const targetUrl = new URL(fetchCalls[0].url);
+    assert.equal(targetUrl.searchParams.get('response_format'), 'mp3');
+    assert.equal(fetchCalls[0].init.method, 'GET');
+    assert.equal(res.headers['Content-Type'], 'audio/mpeg');
+    assert.equal(Buffer.isBuffer(res.body), true);
+});

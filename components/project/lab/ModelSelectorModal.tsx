@@ -47,10 +47,10 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     const [allModels, setAllModels] = useState<ModelOption[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const refreshRegistry = async () => {
+    const refreshRegistry = async (force = false) => {
         setIsLoading(true);
         try {
-            const data = await loadDynamicRegistry();
+            const data = await loadDynamicRegistry({ force });
             setAllModels(data);
         } catch (e) {
             console.error("Hub Sync Failure");
@@ -67,7 +67,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
 
     useEffect(() => {
         if (!isOpen) return;
-        const onRegistryUpdated = () => refreshRegistry();
+        const onRegistryUpdated = () => refreshRegistry(true);
         window.addEventListener('aimana-registry-updated', onRegistryUpdated);
         return () => window.removeEventListener('aimana-registry-updated', onRegistryUpdated);
     }, [isOpen]);

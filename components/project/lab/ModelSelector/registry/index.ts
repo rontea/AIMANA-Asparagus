@@ -33,6 +33,15 @@ const REGISTRY_CACHE_TTL_MS = 20_000;
 let registryCache: { fetchedAt: number; data: ModelOption[] } | null = null;
 let inFlightRegistryRequest: Promise<ModelOption[]> | null = null;
 
+export const clearDynamicRegistryCache = () => {
+    registryCache = null;
+    inFlightRegistryRequest = null;
+};
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('aimana-registry-updated', clearDynamicRegistryCache);
+}
+
 /**
  * Dynamic Neural Registry Fetcher
  * Optimized for high-cadence Hub synchronization.

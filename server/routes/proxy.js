@@ -1667,6 +1667,10 @@ function normalizePollinationsAudioQuery(rawUrl, payload = {}, engine = {}) {
             modelName.includes('ace-step') ||
             modelName.includes('ace_step')
         );
+        if (!isMusicRequest && !parsed.searchParams.get('response_format')) {
+            parsed.searchParams.set('response_format', 'mp3');
+            return parsed.toString();
+        }
         if (!isMusicRequest) return rawUrl;
 
         const styleValue = String(payload?.style ?? dynamicParams?.style ?? '').trim();

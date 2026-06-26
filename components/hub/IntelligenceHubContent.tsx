@@ -71,10 +71,10 @@ export const IntelligenceHubContent: React.FC = () => {
     );
     const [showFilters, setShowFilters] = useState(false);
 
-    const refreshHub = useCallback(async (showLoading = true) => {
+    const refreshHub = useCallback(async (showLoading = true, force = false) => {
         if (showLoading) setIsLoading(true);
         try {
-            const registry = await loadDynamicRegistry();
+            const registry = await loadDynamicRegistry({ force });
             setAllModels(registry);
 
             const res = await fetch('/api/settings/registry/admin', {
@@ -103,7 +103,7 @@ export const IntelligenceHubContent: React.FC = () => {
     useEffect(() => {
         refreshHub();
 
-        const syncListener = () => refreshHub(false);
+        const syncListener = () => refreshHub(false, true);
         window.addEventListener('aimana-registry-updated', syncListener);
         return () => window.removeEventListener('aimana-registry-updated', syncListener);
     }, [refreshHub]);
@@ -224,7 +224,7 @@ export const IntelligenceHubContent: React.FC = () => {
             );
             setProviderFilter('google');
             setCategoryFilter('all');
-            await refreshHub(false);
+            await refreshHub(false, true);
             window.dispatchEvent(new CustomEvent('aimana-registry-updated'));
         } catch (e: any) {
             const message = e?.message || 'Google model sync failed';
@@ -253,7 +253,7 @@ export const IntelligenceHubContent: React.FC = () => {
             const skipped = Number(payload.skipped || 0);
             setImageSyncSummary(`Pollinations image sync complete: ${inserted} inserted, ${updated} updated, ${skipped} skipped.`);
             setCategoryFilter('Visual');
-            await refreshHub(false);
+            await refreshHub(false, true);
             window.dispatchEvent(new CustomEvent('aimana-registry-updated'));
         } catch (e: any) {
             const message = e?.message || 'Pollinations image sync failed';
@@ -283,7 +283,7 @@ export const IntelligenceHubContent: React.FC = () => {
             const skipped = Number(payload.skipped || 0);
             setSyncSummary(`Pollinations text sync complete: ${inserted} inserted, ${updated} updated, ${skipped} skipped.`);
             setCategoryFilter('Language');
-            await refreshHub(false);
+            await refreshHub(false, true);
             window.dispatchEvent(new CustomEvent('aimana-registry-updated'));
         } catch (e: any) {
             const message = e?.message || 'Pollinations text sync failed';
@@ -313,7 +313,7 @@ export const IntelligenceHubContent: React.FC = () => {
             const skipped = Number(payload.skipped || 0);
             setAudioSyncSummary(`Pollinations audio sync complete: ${inserted} inserted, ${updated} updated, ${skipped} skipped.`);
             setCategoryFilter('Audio');
-            await refreshHub(false);
+            await refreshHub(false, true);
             window.dispatchEvent(new CustomEvent('aimana-registry-updated'));
         } catch (e: any) {
             const message = e?.message || 'Pollinations audio sync failed';
@@ -343,7 +343,7 @@ export const IntelligenceHubContent: React.FC = () => {
             const skipped = Number(payload.skipped || 0);
             setVideoSyncSummary(`Pollinations video sync complete: ${inserted} inserted, ${updated} updated, ${skipped} skipped.`);
             setCategoryFilter('Motion');
-            await refreshHub(false);
+            await refreshHub(false, true);
             window.dispatchEvent(new CustomEvent('aimana-registry-updated'));
         } catch (e: any) {
             const message = e?.message || 'Pollinations video sync failed';
