@@ -24,6 +24,10 @@ build/
 *secrets*.json
 *token*.json
 *service-account*.json
+*.codex-logs
+*.agents
+*.github/workflows
+.github/
 
 # AIMANA Local Storage (Large binaries & Database)
 # This folder contains your uploads and the SQLite file which often exceed GitHub's 100MB limit.
