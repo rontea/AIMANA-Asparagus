@@ -3,6 +3,8 @@ A local-first Digital Asset Management (DAM) system that combines asset organiza
 
 <img width="1983" height="793" alt="image" src="https://github.com/user-attachments/assets/335d64c4-8511-490a-a38c-c58c42fe0022" />
 
+Please support me at 
+
 ## How to Run the Application
 
 ### 1. Install the required software
@@ -287,3 +289,5 @@ Current install-time config categories:
 - Fallback web search
 
 The installer intentionally treats provider keys as optional and explains the feature impact of leaving them unset.
+
+## Looking for your [Support](https://github.com/sponsors/rontea)
