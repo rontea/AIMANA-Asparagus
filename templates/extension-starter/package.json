@@ -1,0 +1,17 @@
+{
+  "name": "@aimana/extension-your-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./server/index.js"
+  },
+  "peerDependencies": {
+    "@aimana/extension-sdk": "^0.1.0",
+    "lucide-react": "^0.378.0",
+    "react": "^18.0.0"
+  }
+}

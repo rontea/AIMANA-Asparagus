@@ -1,0 +1,5 @@
+{
+  "name": "AIMANA",
+  "description": "A Google Keep-like project manager for assets. Create projects, choose local storage, and drag-and-drop images, audio, and video files with AI-powered insights.",
+  "requestFramePermissions": []
+}

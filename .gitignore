@@ -68,11 +68,6 @@ Thumbs.db
 design-concept-1/
 
 # Local temporary files
+/.tmp/
 tmp_*
 *.timestamp-*.mjs
-
-#internal
-
-internal.docs/
-internal.todo/
-private.README.md
