@@ -2640,7 +2640,10 @@ router.post('/registry/sync/pollinations-image', requireAdmin, async (req, res) 
         const visualModels = [
             ...baseVisualModels,
             ...POLLINATIONS_PAID_IMAGE_FALLBACKS.filter((fallback) => (
-                !baseVisualModels.some((model) => String(model?.name || '').trim().toLowerCase() === fallback.name)
+                !baseVisualModels.some((model) =>
+                    String(model?.name || '').trim().toLowerCase() === fallback.name
+                    || toStringArray(model?.aliases).includes(fallback.name)
+                )
             ))
         ];
         let inserted = 0;
@@ -2654,9 +2657,10 @@ router.post('/registry/sync/pollinations-image', requireAdmin, async (req, res) 
             const remoteName = String(remote?.name || '').trim();
             if (!remoteName) continue;
 
-            const override = POLLINATIONS_IMAGE_MODEL_OVERRIDES[remoteName] || {};
-            const id = override.id || `pollinations-${toSlug(remoteName)}`;
             const aliases = toStringArray(remote?.aliases);
+            const override = [remoteName, ...aliases]
+                .map((name) => POLLINATIONS_IMAGE_MODEL_OVERRIDES[name]).find(Boolean) || {};
+            const id = override.id || `pollinations-${toSlug(remoteName)}`;
             const inputModalities = toStringArray(remote?.input_modalities).map((m) => String(m || '').toLowerCase());
             const outputModalities = toStringArray(remote?.output_modalities).map((m) => String(m || '').toLowerCase());
             const label = override.label || String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
@@ -2875,9 +2879,10 @@ router.post('/registry/sync/pollinations-video', requireAdmin, async (req, res) 
             const remoteName = String(remote?.name || '').trim();
             if (!remoteName) continue;
 
-            const override = POLLINATIONS_VIDEO_MODEL_OVERRIDES[remoteName] || {};
-            const id = `pollinations-${toSlug(remoteName)}`;
             const aliases = toStringArray(remote?.aliases);
+            const override = [remoteName, ...aliases]
+                .map((name) => POLLINATIONS_VIDEO_MODEL_OVERRIDES[name]).find(Boolean) || {};
+            const id = `pollinations-${toSlug(remoteName)}`;
             const inputModalities = toStringArray(remote?.input_modalities).map((m) => String(m || '').toLowerCase());
             const outputModalities = toStringArray(remote?.output_modalities).map((m) => String(m || '').toLowerCase());
             const label = String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
