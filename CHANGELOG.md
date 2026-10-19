@@ -6,21 +6,26 @@ Notable changes to AIMANA Asparagus are recorded here. Earlier implementation de
 
 ### Added
 
-- Added a "Renew All Lanes" action in Checkpoint Hub to run multi-provider registry syncs across text, image, audio, and video lanes in a single sequence.
-- Added CI/CD pipeline planning and application update system architecture specifications (`internal.todo/plan_cicd.md`, `internal.todo/todo-owner-application-update-system-2026-07-21.md`).
-- Added Checkpoint Hub operations and renewal documentation (`internal.docs/checkpoint-hub.md`).
-- Added internal development changelog tracking (`CHANGELOG_INTERNAL.md`).
+- Added a "Renew All Lanes" action in Checkpoint Hub to run multi-provider registry syncs across text, image, audio, and video lanes in a single sequence ([`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0)).
+- Added CI/CD pipeline planning and application update system architecture specifications (`internal.todo/plan_cicd.md`, `internal.todo/todo-owner-application-update-system-2026-07-21.md`) ([`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0)).
+- Added Checkpoint Hub operations and renewal documentation (`internal.docs/checkpoint-hub.md`) ([`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0)).
+- Added internal development changelog tracking (`CHANGELOG_INTERNAL.md`) ([`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0)).
 
 ### Improved
 
-- Improved Checkpoint Hub registry reconciliation to automatically purge outdated provider model identifiers when upstream catalogs update.
-- Improved asset card thumbnail presentation to fit within containers without edge clipping (`object-contain`).
-- Updated project versioning to `0.16.100` in package manifests.
+- Improved Checkpoint Hub registry reconciliation to automatically purge outdated provider model identifiers when upstream catalogs update ([`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0)).
+- Improved asset card thumbnail presentation to fit within containers without edge clipping (`object-contain`) ([`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0)).
+- Updated project versioning to `0.16.100` in package manifests ([`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0)).
 
 ### Fixed
 
-- Fixed an issue where system startup re-seeding could overwrite live synchronized Pollinations provider model catalogs.
-- Fixed Pollinations video registry synchronization to query the dedicated video endpoint.
+- Fixed an issue where system startup re-seeding could overwrite live synchronized Pollinations provider model catalogs ([`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0)).
+- Fixed Pollinations video registry synchronization to query the dedicated video endpoint ([`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0)).
+
+### Commits
+
+- [`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0) release: bump to 0.16.100, add changelogs, multi-lane hub renewal, and catalog reconciliation
+
 
 ## [0.16.99-dev] - 2026-06-27 (development snapshot)
 
