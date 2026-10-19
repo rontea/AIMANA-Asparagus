@@ -1,6 +1,6 @@
 {
   "name": "aimana-project-manager",
-  "version": "0.16.99-dev",
+  "version": "0.16.100",
   "description": "Local-first Asset Management System with AI integration",
   "main": "index.js",
   "type": "module",

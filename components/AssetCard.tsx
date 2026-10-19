@@ -359,7 +359,7 @@ const AssetCard: React.FC<AssetCardProps> = ({
                         draggable={false}
                         loading="lazy"
                         decoding="async"
-                        className={`w-full h-full object-cover ${thumbnailBlurClass}`}
+                        className={`w-full h-full object-contain ${thumbnailBlurClass}`}
                         referrerPolicy="no-referrer"
                       />
                   ) : assetType === AssetType.VIDEO && objectUrl ? (
@@ -649,7 +649,7 @@ const AssetCard: React.FC<AssetCardProps> = ({
             loading="lazy"
             decoding="async"
             fetchPriority="low"
-            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${thumbnailBlurClass}`}
+            className={`w-full h-full object-contain ${thumbnailBlurClass}`}
             referrerPolicy="no-referrer"
           />
         ) : assetType === AssetType.VIDEO && objectUrl ? (

@@ -985,10 +985,11 @@ router.put('/lab-workspace-state', async (req, res) => {
 
 // --- Dynamic Registry API ---
 
-const POLLINATIONS_TEXT_MODELS_URL = 'https://gen.pollinations.ai/text/models';
-const POLLINATIONS_V1_MODELS_URL = 'https://gen.pollinations.ai/v1/models';
-const POLLINATIONS_AUDIO_MODELS_URL = 'https://gen.pollinations.ai/audio/models';
-const POLLINATIONS_MEDIA_MODELS_URL = 'https://gen.pollinations.ai/image/models';
+const POLLINATIONS_TEXT_MODELS_URL = 'https://gen.pollinations.ai/text/models?source=official';
+const POLLINATIONS_V1_MODELS_URL = 'https://gen.pollinations.ai/v1/models?source=official';
+const POLLINATIONS_AUDIO_MODELS_URL = 'https://gen.pollinations.ai/audio/models?source=official';
+const POLLINATIONS_MEDIA_MODELS_URL = 'https://gen.pollinations.ai/image/models?source=official';
+const POLLINATIONS_VIDEO_MODELS_URL = 'https://gen.pollinations.ai/video/models?source=official';
 const POLLINATIONS_CHAT_URL = 'https://gen.pollinations.ai/v1/chat/completions';
 const POLLINATIONS_CHAT_HEADERS = '{"Accept":"application/json","Content-Type":"application/json"}';
 const POLLINATIONS_CHAT_BODY_TEMPLATE = '{"model":"{{upstreamId}}","messages":[{"role":"system","content":{{system_json}}},{"role":"user","content":{{prompt_json}}}],"temperature":{{temperature}},"max_tokens":{{max_tokens}},"stream":false}';
@@ -1310,64 +1311,6 @@ const POLLINATIONS_IMAGE_MODEL_OVERRIDES = {
         isPaid: true
     }
 };
-const POLLINATIONS_PAID_IMAGE_FALLBACKS = [
-    {
-        name: 'p-image',
-        description: 'P-Image - Premium paid image generation model',
-        input_modalities: ['text'],
-        output_modalities: ['image'],
-        paid_only: true
-    },
-    {
-        name: 'p-image-edit',
-        description: 'P-Image Edit - Premium paid image editing model',
-        input_modalities: ['text', 'image'],
-        output_modalities: ['image'],
-        paid_only: true
-    },
-    {
-        name: 'seedream',
-        description: 'Seedream - Paid Seedream image generation model',
-        input_modalities: ['text', 'image'],
-        output_modalities: ['image'],
-        paid_only: true
-    },
-    {
-        name: 'seedream-pro',
-        description: 'Seedream 4.5 Pro - Paid Seedream pro image generation model',
-        input_modalities: ['text', 'image'],
-        output_modalities: ['image'],
-        paid_only: true
-    },
-    {
-        name: 'nanobanana-2',
-        description: 'NanoBanana 2 - Paid second-generation NanoBanana image model',
-        input_modalities: ['text', 'image'],
-        output_modalities: ['image'],
-        paid_only: true
-    },
-    {
-        name: 'gptimage-large',
-        description: 'GPT Image Large - Paid large GPT image model',
-        input_modalities: ['text', 'image'],
-        output_modalities: ['image'],
-        paid_only: true
-    },
-    {
-        name: 'grok-imagine-pro',
-        description: 'Grok Imagine Pro - Paid Aurora image model',
-        input_modalities: ['text'],
-        output_modalities: ['image'],
-        paid_only: true
-    },
-    {
-        name: 'nova-canvas',
-        description: 'Nova Canvas - Paid Bedrock image generation and editing model',
-        input_modalities: ['text', 'image'],
-        output_modalities: ['image'],
-        paid_only: true
-    }
-];
 const LANGUAGE_UI_SCHEMA_JSON = JSON.stringify([
     {
         key: 'temperature',
@@ -1390,108 +1333,20 @@ const LANGUAGE_UI_SCHEMA_JSON = JSON.stringify([
         description: 'Upper bound for completion length.'
     }
 ]);
-const POLLINATIONS_PAID_TEXT_FALLBACKS = [
-    {
-        name: 'openai-large',
-        description: 'OpenAI GPT-5.2 - Most Powerful & Intelligent',
-        tools: true,
-        reasoning: true,
-        context_length: 400000,
-        input_modalities: ['text', 'image'],
-        output_modalities: ['text'],
-        paid_only: true
-    },
-    {
-        name: 'gemini',
-        description: 'Google Gemini 3 Flash - Pro-Grade Reasoning at Flash Speed',
-        tools: true,
-        context_length: 1048576,
-        input_modalities: ['text', 'image', 'audio', 'video'],
-        output_modalities: ['text'],
-        paid_only: true
-    },
-    {
-        name: 'grok',
-        description: 'xAI Grok 4.1 Fast - High Speed & Real-Time',
-        tools: true,
-        context_length: 2000000,
-        input_modalities: ['text'],
-        output_modalities: ['text'],
-        paid_only: true
-    },
-    {
-        name: 'grok-reasoning',
-        description: 'xAI Grok 4.1 Fast Reasoning - Chain-of-Thought Reasoning',
-        tools: true,
-        reasoning: true,
-        context_length: 2000000,
-        input_modalities: ['text'],
-        output_modalities: ['text'],
-        paid_only: true
-    },
-    {
-        name: 'claude',
-        description: 'Anthropic Claude Sonnet 4.6 - Most Capable & Balanced',
-        tools: true,
-        context_length: 200000,
-        input_modalities: ['text', 'image'],
-        output_modalities: ['text'],
-        paid_only: true
-    },
-    {
-        name: 'claude-large',
-        description: 'Anthropic Claude Opus 4.6 - Most Intelligent Model',
-        tools: true,
-        context_length: 200000,
-        input_modalities: ['text', 'image'],
-        output_modalities: ['text'],
-        paid_only: true
-    },
-    {
-        name: 'gemini-large',
-        description: 'Google Gemini 3.1 Pro - Most Intelligent Model with 1M Context (Preview)',
-        tools: true,
-        reasoning: true,
-        context_length: 1048576,
-        input_modalities: ['text', 'image', 'audio', 'video'],
-        output_modalities: ['text'],
-        paid_only: true
-    },
-    {
-        name: 'midijourney-large',
-        description: 'MIDIjourney Large - Premium AI Music Composition',
-        tools: true,
-        input_modalities: ['text'],
-        output_modalities: ['text'],
-        is_specialized: true,
-        paid_only: true
-    },
-    {
-        name: 'nova',
-        description: 'Amazon Nova 2 Lite - 1M Context with Reasoning',
-        tools: true,
-        reasoning: true,
-        context_length: 1048576,
-        input_modalities: ['text'],
-        output_modalities: ['text'],
-        paid_only: true
-    },
-    {
-        name: 'qwen-coder-large',
-        description: 'Qwen3 Coder Next - Advanced Code Generation via DashScope',
-        tools: true,
-        context_length: 262144,
-        input_modalities: ['text'],
-        output_modalities: ['text'],
-        paid_only: true
-    }
-];
-
 const toStringArray = (value) => (
     Array.isArray(value)
         ? value.map((v) => String(v || '').trim()).filter(Boolean)
         : []
 );
+
+const getPollinationsCatalogOverride = (model, overrides = {}) => {
+    const candidates = [model?.name, ...toStringArray(model?.aliases)];
+    for (const candidate of candidates) {
+        const key = String(candidate || '').trim().toLowerCase();
+        if (key && overrides[key]) return overrides[key];
+    }
+    return {};
+};
 
 const toPricingRecordOrNull = (value) => (
     value && typeof value === 'object' ? value : null
@@ -1746,6 +1601,7 @@ const normalizeTextInputModalities = (modelName, inputModalities) => {
 const isV1TextChatModel = (model = {}) => {
     const id = String(model?.id || '').trim();
     if (!id) return false;
+    if (String(model?.category || '').toLowerCase() !== 'text') return false;
     const endpoints = toStringArray(model?.supported_endpoints);
     return endpoints.includes('/v1/chat/completions');
 };
@@ -1755,12 +1611,16 @@ const toV1TextModelShape = (model = {}) => {
     if (!name) return null;
     return {
         name,
+        title: String(model?.title || '').trim(),
+        description: String(model?.description || '').trim(),
         aliases: [],
         input_modalities: toStringArray(model?.input_modalities).map((m) => String(m || '').toLowerCase()),
         output_modalities: toStringArray(model?.output_modalities).map((m) => String(m || '').toLowerCase()),
         tools: model?.tools === true,
         reasoning: model?.reasoning === true,
         context_length: Number.isFinite(Number(model?.context_length)) ? Number(model.context_length) : undefined,
+        pricing: toPricingRecordOrNull(model?.pricing),
+        paid_only: model?.paid_only === true,
         is_specialized: false
     };
 };
@@ -1893,7 +1753,10 @@ const TRANSCRIPTION_MODEL_OPTIONS = [
 
 const buildTranscriptionAudioUiSchema = (modelId = '') => {
     const normalizedModelId = String(modelId || '').trim().toLowerCase();
-    const isScribeModel = normalizedModelId === 'scribe' || normalizedModelId === 'scribe_v2';
+    const isScribeModel = normalizedModelId === 'scribe'
+        || normalizedModelId === 'scribe_v2'
+        || normalizedModelId === 'scribe-v2'
+        || normalizedModelId.endsWith('/scribe-v2');
     const schema = [
         {
             key: 'response_format',
@@ -1962,7 +1825,7 @@ const buildPollinationsAudioSyncEntries = (remote = {}) => {
     const outputModalities = toStringArray(remote?.output_modalities).map((m) => String(m || '').toLowerCase());
     const voices = toStringArray(remote?.voices);
     const capabilities = deriveAudioCapabilities(remote);
-    const label = String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
+    const label = String(remote?.title || '').trim() || String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
     const description = String(remote?.description || '').trim() || `${toTitle(remoteName)} via Pollinations audio gateway.`;
     const isTranscription = inputModalities.includes('audio') && outputModalities.includes('text');
     const isMusic = isMusicAudioModel(remote);
@@ -1981,7 +1844,7 @@ const buildPollinationsAudioSyncEntries = (remote = {}) => {
         textAliases: Array.from(new Set([resolvedUpstreamId, remoteName, ...aliases])),
         textPricing: normalizePollinationsAudioPricing(resolvedUpstreamId, remote?.pricing),
         textVoices: voices,
-        audioSource: 'pollinations/audio/models',
+        audioSource: 'pollinations/audio/models?source=official',
         audioSyncedAt: Date.now()
     });
 
@@ -2406,44 +2269,13 @@ router.post('/registry/sync/pollinations-text', requireAdmin, async (req, res) =
             modelMap.set(key, v1Model);
         }
 
-        // Some paid-only models may be omitted for restricted keys.
-        // Ensure core paid language models are still represented in the registry.
-        for (const fallback of POLLINATIONS_PAID_TEXT_FALLBACKS) {
-            const existing = modelMap.get(fallback.name);
-            if (existing) {
-                const inputModalities = toStringArray(existing?.input_modalities);
-                const outputModalities = toStringArray(existing?.output_modalities);
-                modelMap.set(fallback.name, {
-                    ...fallback,
-                    ...existing,
-                    aliases: toStringArray(existing?.aliases),
-                    input_modalities: inputModalities.length > 0 ? inputModalities : (fallback.input_modalities || ['text']),
-                    output_modalities: outputModalities.length > 0 ? outputModalities : (fallback.output_modalities || ['text']),
-                    pricing: existing?.pricing && typeof existing.pricing === 'object' ? existing.pricing : { currency: 'pollen' },
-                    is_specialized: typeof existing?.is_specialized === 'boolean'
-                        ? existing.is_specialized
-                        : !!fallback.is_specialized,
-                    paid_only: typeof existing?.paid_only === 'boolean'
-                        ? existing.paid_only
-                        : !!fallback.paid_only
-                });
-                continue;
-            }
-            modelMap.set(fallback.name, {
-                ...fallback,
-                aliases: [],
-                input_modalities: Array.isArray(fallback.input_modalities) ? fallback.input_modalities : ['text'],
-                output_modalities: Array.isArray(fallback.output_modalities) ? fallback.output_modalities : ['text'],
-                pricing: { currency: 'pollen' },
-                is_specialized: typeof fallback.is_specialized === 'boolean' ? fallback.is_specialized : false
-            });
-        }
         const syncModels = Array.from(modelMap.values());
 
         let inserted = 0;
         let updated = 0;
         let skipped = 0;
         const skippedIds = [];
+        const syncedIds = [];
 
         for (const remote of syncModels) {
             const remoteName = String(remote?.name || '').trim();
@@ -2457,7 +2289,7 @@ router.post('/registry/sync/pollinations-text', requireAdmin, async (req, res) =
             const voices = toStringArray(remote?.voices);
             const capabilities = deriveCapabilities(remote);
             const iconName = deriveIconName(remote, capabilities);
-            const label = String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
+            const label = String(remote?.title || '').trim() || String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
             const description = String(remote?.description || '').trim() || `${toTitle(remoteName)} via Pollinations text gateway.`;
             const configJson = JSON.stringify({
                 supportedRatios: [],
@@ -2473,7 +2305,7 @@ router.post('/registry/sync/pollinations-text', requireAdmin, async (req, res) =
                 textAliases: aliases,
                 textPricing: remote?.pricing && typeof remote.pricing === 'object' ? remote.pricing : null,
                 textVoices: voices,
-                textSource: 'pollinations/text/models',
+                textSource: 'pollinations/text/models?source=official',
                 textSyncedAt: Date.now()
             });
 
@@ -2487,6 +2319,8 @@ router.post('/registry/sync/pollinations-text', requireAdmin, async (req, res) =
                 skippedIds.push(id);
                 continue;
             }
+
+            syncedIds.push(id);
 
             if (existing) {
                 await dbRun(
@@ -2573,6 +2407,18 @@ router.post('/registry/sync/pollinations-text', requireAdmin, async (req, res) =
             }
         }
 
+        if (syncedIds.length > 0) {
+            const placeholders = syncedIds.map(() => '?').join(',');
+            await dbRun(
+                `DELETE FROM custom_engines
+                 WHERE provider = 'pollinations'
+                   AND category = 'Language'
+                   AND isSystem = 1
+                   AND id NOT IN (${placeholders})`,
+                syncedIds
+            );
+        }
+
         await dbRun(`DELETE FROM custom_engines WHERE id = 'pollinations-p1' AND provider = 'pollinations' AND category = 'Language'`);
 
         await logSystemEvent(
@@ -2637,12 +2483,7 @@ router.post('/registry/sync/pollinations-image', requireAdmin, async (req, res) 
         }
 
         const baseVisualModels = mergedMediaModels.filter(isImageCatalogModel);
-        const visualModels = [
-            ...baseVisualModels,
-            ...POLLINATIONS_PAID_IMAGE_FALLBACKS.filter((fallback) => (
-                !baseVisualModels.some((model) => String(model?.name || '').trim().toLowerCase() === fallback.name)
-            ))
-        ];
+        const visualModels = baseVisualModels;
         let inserted = 0;
         let updated = 0;
         let skipped = 0;
@@ -2654,12 +2495,12 @@ router.post('/registry/sync/pollinations-image', requireAdmin, async (req, res) 
             const remoteName = String(remote?.name || '').trim();
             if (!remoteName) continue;
 
-            const override = POLLINATIONS_IMAGE_MODEL_OVERRIDES[remoteName] || {};
+            const override = getPollinationsCatalogOverride(remote, POLLINATIONS_IMAGE_MODEL_OVERRIDES);
             const id = override.id || `pollinations-${toSlug(remoteName)}`;
             const aliases = toStringArray(remote?.aliases);
             const inputModalities = toStringArray(remote?.input_modalities).map((m) => String(m || '').toLowerCase());
             const outputModalities = toStringArray(remote?.output_modalities).map((m) => String(m || '').toLowerCase());
-            const label = override.label || String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
+            const label = String(remote?.title || '').trim() || override.label || String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
             const description = String(remote?.description || '').trim() || `${toTitle(remoteName)} via Pollinations image gateway.`;
             const requestUrl = buildImageRequestUrl(remoteName, {
                 ...override,
@@ -2682,7 +2523,7 @@ router.post('/registry/sync/pollinations-image', requireAdmin, async (req, res) 
                 imagePricing: toPricingRecordOrNull(remote?.pricing) || getPollinationsMediaPricingFallback(remoteName),
                 imageInputModalities: inputModalities,
                 imageOutputModalities: outputModalities,
-                imageSource: 'pollinations/image/models',
+                imageSource: 'pollinations/image/models?source=official',
                 imageSyncedAt: syncTimestamp
             });
             const capabilities = buildImageCapabilities(remote, {
@@ -2842,11 +2683,11 @@ router.post('/registry/sync/pollinations-video', requireAdmin, async (req, res) 
         }
 
         const [upstreamRes, publicRes] = await Promise.all([
-            fetch(POLLINATIONS_MEDIA_MODELS_URL, {
+            fetch(POLLINATIONS_VIDEO_MODELS_URL, {
                 headers,
                 signal: AbortSignal.timeout(20000)
             }).catch((err) => ({ __fetchError: err })),
-            fetch(POLLINATIONS_MEDIA_MODELS_URL, {
+            fetch(POLLINATIONS_VIDEO_MODELS_URL, {
                 headers: publicHeaders,
                 signal: AbortSignal.timeout(20000)
             }).catch((err) => ({ __fetchError: err }))
@@ -2875,12 +2716,12 @@ router.post('/registry/sync/pollinations-video', requireAdmin, async (req, res) 
             const remoteName = String(remote?.name || '').trim();
             if (!remoteName) continue;
 
-            const override = POLLINATIONS_VIDEO_MODEL_OVERRIDES[remoteName] || {};
+            const override = getPollinationsCatalogOverride(remote, POLLINATIONS_VIDEO_MODEL_OVERRIDES);
             const id = `pollinations-${toSlug(remoteName)}`;
             const aliases = toStringArray(remote?.aliases);
             const inputModalities = toStringArray(remote?.input_modalities).map((m) => String(m || '').toLowerCase());
             const outputModalities = toStringArray(remote?.output_modalities).map((m) => String(m || '').toLowerCase());
-            const label = String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
+            const label = String(remote?.title || '').trim() || override.label || String(remote?.description || '').split(' - ')[0]?.trim() || toTitle(remoteName);
             const description = String(remote?.description || '').trim() || `${toTitle(remoteName)} via Pollinations video gateway.`;
             const supportsImageInput = typeof override.supportsImageInput === 'boolean'
                 ? override.supportsImageInput
@@ -2895,7 +2736,7 @@ router.post('/registry/sync/pollinations-video', requireAdmin, async (req, res) 
                 videoPricing: remote?.pricing && typeof remote.pricing === 'object' ? remote.pricing : null,
                 videoInputModalities: inputModalities,
                 videoOutputModalities: outputModalities,
-                videoSource: 'pollinations/image/models',
+                videoSource: 'pollinations/video/models?source=official',
                 videoSyncedAt: syncTimestamp
             });
             const requestUrl = buildVideoRequestUrl(audioMode, supportsImageInput);
@@ -3018,7 +2859,7 @@ router.post('/registry/sync/pollinations-video', requireAdmin, async (req, res) 
 
         res.json({
             success: true,
-            source: POLLINATIONS_MEDIA_MODELS_URL,
+            source: POLLINATIONS_VIDEO_MODELS_URL,
             totalRemote: mergedMediaModels.length,
             totalSynced: motionModels.length,
             inserted,
@@ -3181,7 +3022,6 @@ router.post('/registry/sync/pollinations-audio', requireAdmin, async (req, res) 
                  WHERE provider = 'pollinations'
                    AND category = 'Audio'
                    AND isSystem = 1
-                   AND json_extract(configJson, '$.audioSource') = 'pollinations/audio/models'
                    AND id NOT IN (${placeholders})`,
                 syncEntries.map((entry) => entry.id)
             );

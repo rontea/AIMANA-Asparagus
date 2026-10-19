@@ -39,6 +39,18 @@ type CapabilityFilter =
     | 'code'
     | 'specialized';
 
+const postRegistrySync = async (url: string) => {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: api.auth.getAuthHeaders()
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        throw new Error(payload.error || `Registry sync failed (${res.status})`);
+    }
+    return payload;
+};
+
 export const IntelligenceHubContent: React.FC = () => {
     const [allModels, setAllModels] = useState<ModelOption[]>([]);
     const [dbEngines, setDbEngines] = useState<any[]>([]);
@@ -50,11 +62,14 @@ export const IntelligenceHubContent: React.FC = () => {
     const [isSyncingTextModels, setIsSyncingTextModels] = useState(false);
     const [isSyncingAudioModels, setIsSyncingAudioModels] = useState(false);
     const [isSyncingVideoModels, setIsSyncingVideoModels] = useState(false);
+    const [isRenewingProviderLanes, setIsRenewingProviderLanes] = useState(false);
     const [googleSyncSummary, setGoogleSyncSummary] = useState<string | null>(null);
     const [imageSyncSummary, setImageSyncSummary] = useState<string | null>(null);
     const [syncSummary, setSyncSummary] = useState<string | null>(null);
     const [audioSyncSummary, setAudioSyncSummary] = useState<string | null>(null);
     const [videoSyncSummary, setVideoSyncSummary] = useState<string | null>(null);
+    const [providerRenewalSummary, setProviderRenewalSummary] = useState<string | null>(null);
+    const [renewalError, setRenewalError] = useState<string | null>(null);
     const [googleSyncError, setGoogleSyncError] = useState<string | null>(null);
     const [imageSyncError, setImageSyncError] = useState<string | null>(null);
     const [syncError, setSyncError] = useState<string | null>(null);
@@ -354,6 +369,56 @@ export const IntelligenceHubContent: React.FC = () => {
         }
     }, [notifySyncError, refreshHub]);
 
+    const renewProviderLanes = useCallback(async () => {
+        setIsRenewingProviderLanes(true);
+        setProviderRenewalSummary(null);
+        setRenewalError(null);
+
+        const lanes = [
+            { name: 'Google', sync: () => api.settings.syncGoogleModels() },
+            { name: 'Pollinations Image', sync: () => postRegistrySync('/api/settings/registry/sync/pollinations-image') },
+            { name: 'Pollinations Text', sync: () => postRegistrySync('/api/settings/registry/sync/pollinations-text') },
+            { name: 'Pollinations Audio', sync: () => postRegistrySync('/api/settings/registry/sync/pollinations-audio') },
+            { name: 'Pollinations Video', sync: () => postRegistrySync('/api/settings/registry/sync/pollinations-video') }
+        ];
+        const syncedLanes: string[] = [];
+        const failedLanes: string[] = [];
+
+        try {
+            for (const lane of lanes) {
+                try {
+                    const result = await lane.sync();
+                    const inserted = Number(result.inserted || 0);
+                    const updated = Number(result.updated || 0);
+                    const skipped = Number(result.skipped || 0);
+                    syncedLanes.push(`${lane.name}: ${inserted} added, ${updated} refreshed${skipped ? `, ${skipped} skipped` : ''}`);
+                } catch (e: any) {
+                    failedLanes.push(`${lane.name}: ${e?.message || 'sync failed'}`);
+                }
+            }
+
+            setProviderFilter('all');
+            setCategoryFilter('all');
+            await refreshHub(false, true);
+            window.dispatchEvent(new CustomEvent('aimana-registry-updated'));
+
+            if (failedLanes.length === 0) {
+                setProviderRenewalSummary(`All provider lanes renewed. ${syncedLanes.join('; ')}. Stale provider model identifiers were cleared during reconciliation.`);
+            } else {
+                setProviderRenewalSummary(`Renewed ${syncedLanes.length} of ${lanes.length} provider lanes. ${syncedLanes.join('; ') || 'No lanes synced successfully.'}`);
+                const message = failedLanes.join('; ');
+                setRenewalError(`Some provider lanes could not be renewed: ${message}`);
+                notifySyncError('Provider Renewal Incomplete', message);
+            }
+        } catch (e: any) {
+            const message = e?.message || 'Provider renewal failed';
+            setRenewalError(message);
+            notifySyncError('Provider Renewal Failed', message);
+        } finally {
+            setIsRenewingProviderLanes(false);
+        }
+    }, [notifySyncError, refreshHub]);
+
     const categoryOptions: Array<{ id: CategoryFilter; label: string }> = [
         { id: 'all', label: 'Every Cluster' },
         { id: 'Visual', label: 'Visual' },
@@ -494,6 +559,7 @@ export const IntelligenceHubContent: React.FC = () => {
     ];
 
     const syncMessages = [
+        { tone: 'success' as const, message: providerRenewalSummary },
         { tone: 'success' as const, message: googleSyncSummary },
         { tone: 'success' as const, message: imageSyncSummary },
         { tone: 'success' as const, message: syncSummary },
@@ -503,8 +569,15 @@ export const IntelligenceHubContent: React.FC = () => {
         { tone: 'error' as const, message: imageSyncError },
         { tone: 'error' as const, message: syncError },
         { tone: 'error' as const, message: audioSyncError },
-        { tone: 'error' as const, message: videoSyncError }
+        { tone: 'error' as const, message: videoSyncError },
+        { tone: 'error' as const, message: renewalError }
     ].filter((item): item is { tone: 'success' | 'error'; message: string } => Boolean(item.message));
+
+    const isAnyProviderLaneSyncing = isSyncingGoogleModels
+        || isSyncingImageModels
+        || isSyncingTextModels
+        || isSyncingAudioModels
+        || isSyncingVideoModels;
 
     return (
         <section className="mt-8 mb-12 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -821,6 +894,23 @@ export const IntelligenceHubContent: React.FC = () => {
                         </div>
                     </div>
 
+                    <div className="flex flex-col gap-4 rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h4 className="text-xs font-black uppercase tracking-[0.18em] text-indigo-100">Renew the provider registry</h4>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                                Sync every lane in sequence, remove stale provider engine identifiers, and restore the current model mappings.
+                            </p>
+                        </div>
+                        <button
+                            onClick={renewProviderLanes}
+                            disabled={isRenewingProviderLanes || isAnyProviderLaneSyncing}
+                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-400/30 bg-indigo-600 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-[0_0_16px_rgba(79,70,229,0.24)] transition-all hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {isRenewingProviderLanes ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
+                            {isRenewingProviderLanes ? 'Renewing Lanes' : 'Renew All Lanes'}
+                        </button>
+                    </div>
+
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                         {syncCards.map((card) => {
                             const Icon = card.icon;
@@ -862,7 +952,7 @@ export const IntelligenceHubContent: React.FC = () => {
 
                                     <button
                                         onClick={card.onSync}
-                                        disabled={card.syncing}
+                                        disabled={card.syncing || isRenewingProviderLanes}
                                         className={`mt-6 inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-[10px] font-black uppercase tracking-[0.22em] text-white transition-all disabled:cursor-not-allowed disabled:opacity-60 ${card.buttonClasses}`}
                                     >
                                         {card.syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} className="transition-transform group-hover:rotate-180" />}

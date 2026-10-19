@@ -60,18 +60,37 @@ export const seedDefaultIntents = async () => {
 
 export const seedCustomEngines = async () => {
     console.log("[DB_INIT] Synchronizing Master Neural Registry...");
+
+    let officialPollinationsCategories = new Set();
+    try {
+        const officialPollinationsRows = await dbAll(
+            `SELECT DISTINCT category FROM custom_engines
+             WHERE provider = 'pollinations'
+               AND isSystem = 1
+               AND configJson LIKE '%source=official%'
+            `
+        );
+        officialPollinationsCategories = new Set(
+            officialPollinationsRows.map((row) => String(row.category || '').trim()).filter(Boolean)
+        );
+    } catch (e) {
+        console.error('[DB_SEED] Failed to check the live Pollinations registry:', e.message);
+    }
+    const pollinationsSeedBlueprints = pollinationsBlueprints.filter(
+        (blueprint) => !officialPollinationsCategories.has(blueprint.category)
+    );
     
     const blueprints = [
         ...googleBlueprints,
-        ...pollinationsBlueprints,
+        ...pollinationsSeedBlueprints,
         ...airforceBlueprints,
         ...nvidiaBlueprints
     ];
 
-    const pollinationsVisualSystemIds = pollinationsBlueprints
+    const pollinationsVisualSystemIds = pollinationsSeedBlueprints
         .filter((b) => b.provider === 'pollinations' && b.category === 'Visual' && b.isSystem)
         .map((b) => b.id);
-    const pollinationsMotionSystemIds = pollinationsBlueprints
+    const pollinationsMotionSystemIds = pollinationsSeedBlueprints
         .filter((b) => b.provider === 'pollinations' && b.category === 'Motion' && b.isSystem)
         .map((b) => b.id);
     const googleSystemIds = googleBlueprints
