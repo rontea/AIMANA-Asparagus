@@ -15,6 +15,7 @@ For user-facing release notes and high-level feature summaries, see [CHANGELOG.m
 - **Interactive Migration UI & Reporting**: Added a dedicated "Migrate from a Full Baseline" section in `pages/Install.tsx` featuring confirmation modals, progress state handling, and a post-migration report card detailing rows touched, uploads extracted, source engine version, and warnings.
 - **Concurrency Mutation Lockout**: Integrated a router-level locking mechanism (`installBackupMigrationInProgress`) in `server/routes/app.js` that rejects concurrent mutation requests with `409 Conflict` while a migration is in progress.
 - **Sensitive Data Exposure Containment**: Shielded server-side credentials and system details from client discovery by scoping Vite bundle defines, delegating Google AI operations to backend proxy endpoints, protecting static uploads behind authentication, masking installer status diagnostics, and suppressing raw exception output from unhandled error responses.
+- **Branch Lifecycle**: Merged and consolidated feature and security hardening branch `dev/migration` into `beta`.
 
 ### Code and Architecture
 

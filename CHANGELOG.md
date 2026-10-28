@@ -33,6 +33,7 @@ For internal technical implementation details and architecture notes, see [CHANG
 - **Environment Reference Guide**: Added [`docs/environment.md`](./docs/environment.md) documenting all security, authentication, AI provider, and chat ingestion configuration variables ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
 - **README Cross-References**: Updated [`README.md`](./README.md) with quick links to migration and manual restore procedures ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
 - **Version Bump**: Bumped package manifests to `0.16.101` ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Branch Consolidation**: Merged release `0.16.101` and migration features into `beta`.
 
 ---
 
@@ -83,6 +84,7 @@ For internal technical implementation details and architecture notes, see [CHANG
 
 | Commit | Date | Summary |
 | :--- | :--- | :--- |
+| [`f9aa1b8`](https://github.com/rontea/AIMANA-Asparagus/commit/f9aa1b8) | 2026-10-29 | docs(changelog): record commit id 5c0f571 for 0.16.101 release |
 | [`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571) | 2026-10-29 | release: bump to 0.16.101, add installer backup migration, and security data exposure hardening |
 | [`a881f9c`](https://github.com/rontea/AIMANA-Asparagus/commit/a881f9c) | 2026-10-20 | docs(changelog): format changelog with clear visual hierarchy, highlights, and commit table |
 | [`3f68dcf`](https://github.com/rontea/AIMANA-Asparagus/commit/3f68dcf) | 2026-10-20 | docs(changelog): sanitize commits to match AIMANA-Asparagus git history |
