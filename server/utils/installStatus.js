@@ -103,6 +103,7 @@ const defaultInstallStateRecord = () => ({
     finalizedAt: null,
     installedAt: null,
     installedBy: null,
+    runtimeConfigSetupPending: false,
     lastPreflightAt: null,
     lastPreflightIssues: [],
     updatedAt: 0
@@ -330,6 +331,7 @@ export const getInstallStatusSnapshot = async () => {
 
     let hasAdmin = false;
     let adminUser = null;
+    let totalUsers = null;
     try {
         adminUser = await dbGet(
             `SELECT id, email, name, role
@@ -345,6 +347,20 @@ export const getInstallStatusSnapshot = async () => {
                 ISSUE_SEVERITY.ERROR,
                 'admin-query-failed',
                 'Failed to inspect admin bootstrap state.',
+                { error: error?.message || 'Unknown error' }
+            )
+        );
+    }
+
+    try {
+        const userCountRow = await dbGet('SELECT COUNT(*) as count FROM users');
+        totalUsers = Number(userCountRow?.count ?? 0);
+    } catch (error) {
+        issues.push(
+            createIssue(
+                ISSUE_SEVERITY.ERROR,
+                'user-count-query-failed',
+                'Failed to verify whether backup migration is safe for this instance.',
                 { error: error?.message || 'Unknown error' }
             )
         );
@@ -399,7 +415,13 @@ export const getInstallStatusSnapshot = async () => {
         capabilities: {
             allowDemoAdminBootstrap,
             allowDemoAdminLogin,
-            allowAdminBootstrap: !hasAdmin
+            allowAdminBootstrap: !hasAdmin,
+            allowBackupMigration: !hasAdmin
+                && totalUsers === 0
+                && !existingWorkspaceEvidence.exists
+                && !currentInstallRecord?.bootstrapCompletedAt
+                && !currentInstallRecord?.finalizedAt
+                && !currentInstallRecord?.installedAt
         },
         installer: {
             instanceName: installRecord.instanceName || DEFAULT_INSTANCE_NAME,
@@ -408,7 +430,8 @@ export const getInstallStatusSnapshot = async () => {
             configCompletedAt: installRecord.configCompletedAt,
             finalizedAt: installRecord.finalizedAt,
             installedAt: installRecord.installedAt,
-            installedBy: installRecord.installedBy
+            installedBy: installRecord.installedBy,
+            runtimeConfigSetupPending: installRecord.runtimeConfigSetupPending === true
         }
     };
 };

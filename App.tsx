@@ -77,7 +77,8 @@ const createInstallStatusUnavailable = (): InstallStatus => ({
   capabilities: {
     allowDemoAdminBootstrap: false,
     allowDemoAdminLogin: false,
-    allowAdminBootstrap: false
+    allowAdminBootstrap: false,
+    allowBackupMigration: false
   },
   installer: {
     instanceName: 'AIMANA',

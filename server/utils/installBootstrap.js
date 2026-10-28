@@ -85,6 +85,7 @@ export const finalizeInstaller = async () => {
     const record = await writeInstallStateRecord({
         finalizedAt,
         installedAt: finalizedAt,
+        runtimeConfigSetupPending: false,
         installedBy: snapshot.admin.user?.id || 'admin-root'
     });
     await logSystemEvent('INFO', 'INSTALL', 'Installer finalized for this AIMANA instance.', snapshot.admin.user?.id || 'admin-root');

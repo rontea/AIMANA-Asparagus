@@ -63,8 +63,8 @@ app.use('/api/prompt-assistant', requireAuth, promptAssistantRoutes);
 app.use('/api/extensions', requireAuth, createExtensionApiRouter());
 
 // --- Static File Serving ---
-app.use('/storage/uploads', express.static(UPLOADS_DIR));
-app.use('/uploads', express.static(UPLOADS_DIR)); // Legacy support
+app.use('/storage/uploads', requireAuth, express.static(UPLOADS_DIR));
+app.use('/uploads', requireAuth, express.static(UPLOADS_DIR)); // Legacy support
 
 // Frontend Build Proxy
 app.use(express.static(path.join(__dirname, 'dist')));

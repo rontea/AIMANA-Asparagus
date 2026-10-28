@@ -86,10 +86,10 @@ export interface InstallStatus {
   issues: InstallIssue[];
   admin: {
     exists: boolean;
-    user: Pick<User, 'id' | 'email' | 'name' | 'role'> | null;
+    user?: Pick<User, 'id' | 'email' | 'name' | 'role'> | null;
   };
   runtime: {
-    nodeVersion: string;
+    nodeVersion?: string;
     environment: string;
     production: boolean;
   };
@@ -97,6 +97,7 @@ export interface InstallStatus {
     allowDemoAdminBootstrap: boolean;
     allowDemoAdminLogin: boolean;
     allowAdminBootstrap: boolean;
+    allowBackupMigration: boolean;
   };
   installer: {
     instanceName: string;
@@ -105,7 +106,8 @@ export interface InstallStatus {
     configCompletedAt: number | null;
     finalizedAt: number | null;
     installedAt: number | null;
-    installedBy: string | null;
+    installedBy?: string | null;
+    runtimeConfigSetupPending?: boolean;
   };
 }
 
@@ -139,7 +141,7 @@ export interface InstallerRuntimeImpact {
 export interface InstallerRuntimeConfig {
   envFile: {
     exists: boolean;
-    path: string;
+    path?: string;
   };
   categories: InstallerRuntimeCategory[];
   impacts: InstallerRuntimeImpact[];
@@ -153,15 +155,17 @@ export interface InstallSummary {
   appUrl: string;
   loginUrl: string;
   adminAccount: {
-    id: string;
-    email: string;
-    name: string;
+    configured?: boolean;
+    id?: string;
+    email?: string;
+    name?: string;
   } | null;
   storage: {
-    root: string;
-    uploads: string;
-    database: string;
-    envFile: string;
+    configured?: boolean;
+    root?: string;
+    uploads?: string;
+    database?: string;
+    envFile?: string;
   };
   enabledIntegrations: Array<{
     key: string;
@@ -169,7 +173,7 @@ export interface InstallSummary {
     enabled: boolean;
     detail: string;
   }>;
-  backup: {
+  backup?: {
     lastSuccessfulBackupAt: number | null;
     lastBackupType: 'full' | 'incremental' | null;
     lastBackupId: string | null;

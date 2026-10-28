@@ -55,7 +55,8 @@ const createStatus = (overrides: Partial<InstallStatus> = {}): InstallStatus => 
   capabilities: {
     allowDemoAdminBootstrap: false,
     allowDemoAdminLogin: false,
-    allowAdminBootstrap: true
+    allowAdminBootstrap: true,
+    allowBackupMigration: true
   },
   installer: {
     instanceName: 'AIMANA',
@@ -271,7 +272,7 @@ describe('Install page', () => {
     expect(await screen.findByText(/installation finalized/i)).toBeInTheDocument();
     expect(await screen.findByText('Post-Install Summary')).toBeInTheDocument();
     expect(screen.getByDisplayValue('AIMANA QA')).toBeInTheDocument();
-    expect(screen.getByText(/root admin \(admin@example\.com\)/i)).toBeInTheDocument();
+    expect(screen.getByText('Initial administrator is configured.')).toBeInTheDocument();
     expect(screen.getByText('Rotate AUTH_SECRET after rollout.')).toBeInTheDocument();
     expect(onStatusChange).toHaveBeenCalled();
 

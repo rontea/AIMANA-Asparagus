@@ -1,7 +1,11 @@
 # AIMANA Asparagus
 A local-first Digital Asset Management (DAM) system that combines asset organization with an AI-powered workspace for generating and managing multimedia content, including images, video, audio, chat interactions, and prompt-driven workflows. It is powered by Google and [Pollinations.ai](pollinations.ai) APIs.
 
-For recent updates, see [CHANGELOG.md](./CHANGELOG.md).
+For documentation, guides, and specifications, see the [Documentation Hub](./docs/README.md).
+
+For recent updates, see [CHANGELOG.md](./CHANGELOG.md) (and [CHANGELOG_INTERNAL.md](./CHANGELOG_INTERNAL.md) for technical notes).
+
+For migration and manual restore procedures, see [docs/migration.md](./docs/migration.md).
 
 <img width="1983" height="793" alt="image" src="https://github.com/user-attachments/assets/335d64c4-8511-490a-a38c-c58c42fe0022" />
 
@@ -157,6 +161,8 @@ Run the source deployment installer. This installs dependencies, initializes the
 # Environment Configuration
 
 This file documents the environment variables AIMANA currently reads from the codebase.
+
+For the variables currently present in the root `.env`, see the [per-variable reference](./docs/environment.md), which includes a table explaining each setting.
 
 ## Core Runtime
 

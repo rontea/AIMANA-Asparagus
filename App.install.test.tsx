@@ -28,7 +28,8 @@ const baseInstallStatus: InstallStatus = {
   capabilities: {
     allowDemoAdminBootstrap: false,
     allowDemoAdminLogin: false,
-    allowAdminBootstrap: true
+    allowAdminBootstrap: true,
+    allowBackupMigration: true
   },
   installer: {
     instanceName: 'AIMANA',
@@ -148,7 +149,8 @@ describe('App installer routing', () => {
       capabilities: {
         allowDemoAdminBootstrap: false,
         allowDemoAdminLogin: false,
-        allowAdminBootstrap: false
+        allowAdminBootstrap: false,
+        allowBackupMigration: false
       },
       installer: {
         ...baseInstallStatus.installer,
@@ -185,7 +187,8 @@ describe('App installer routing', () => {
       capabilities: {
         allowDemoAdminBootstrap: false,
         allowDemoAdminLogin: false,
-        allowAdminBootstrap: false
+        allowAdminBootstrap: false,
+        allowBackupMigration: false
       },
       installer: {
         ...baseInstallStatus.installer,

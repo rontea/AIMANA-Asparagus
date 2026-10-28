@@ -81,3 +81,7 @@ design-concept-1/
 .vite/
 tmp_*
 *.timestamp-*.mjs
+
+# Internal planning notes (keep local; do not commit)
+/internal.docs/
+/internal.todo/

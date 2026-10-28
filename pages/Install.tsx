@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowRight, CheckCircle2, Circle, Loader2, Settings2, ShieldCheck, Sparkles, Wrench, KeyRound, Link as LinkIcon, FolderTree, LockKeyhole } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Circle, Database, Loader2, Settings2, ShieldCheck, Sparkles, Wrench, KeyRound, Link as LinkIcon, FolderTree, LockKeyhole } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { api } from '../services/api';
+import type { InstallBackupMigrationResult } from '../services/api/app';
 import type { InstallStatus, InstallerRuntimeConfig, InstallSummary } from '../types';
 import BrandMark from '../components/BrandMark';
 
@@ -14,6 +15,9 @@ const formatTimestamp = (value: number | null) => {
   if (!value) return 'Not completed';
   return new Date(value).toLocaleString();
 };
+
+const MAX_MIGRATION_FILE_BYTES = 1024 * 1024 * 1024;
+const formatFileSize = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
 const hasRuntimeValue = (value: string | undefined) => !!String(value || '').trim();
 
@@ -36,6 +40,10 @@ const Install: React.FC<InstallPageProps> = ({ initialStatus, onStatusChange }) 
   const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [isSavingRuntime, setIsSavingRuntime] = useState(false);
+  const [migrationFile, setMigrationFile] = useState<File | null>(null);
+  const [isMigratingBackup, setIsMigratingBackup] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<InstallBackupMigrationResult['migration'] | null>(null);
+  const migrationFileTooLarge = Boolean(migrationFile && migrationFile.size > MAX_MIGRATION_FILE_BYTES);
 
   const buildRuntimeValues = (config: InstallerRuntimeConfig) => {
     const nextValues: Record<string, string> = {};
@@ -152,7 +160,7 @@ const Install: React.FC<InstallPageProps> = ({ initialStatus, onStatusChange }) 
     {
       label: 'Root admin created',
       complete: status.admin.exists,
-      detail: status.admin.user?.email || 'Create the first admin account'
+      detail: status.admin.exists ? 'Administrator account created' : 'Create the first admin account'
     },
     {
       label: 'Finalize installation',
@@ -216,6 +224,47 @@ const Install: React.FC<InstallPageProps> = ({ initialStatus, onStatusChange }) 
       setError(err.message || 'Failed to create the initial admin.');
     } finally {
       setIsCreatingAdmin(false);
+    }
+  };
+
+  const handleMigrateBackup = async () => {
+    if (!migrationFile) {
+      setError('Choose a Full Baseline backup ZIP first.');
+      return;
+    }
+    if (migrationFileTooLarge) {
+      setError('The Full Baseline ZIP exceeds the 1 GB installer upload limit.');
+      return;
+    }
+    const confirmed = window.confirm(
+      'Restore this Full Baseline into the new installation? This replaces the new instance database and uploads with the backup contents.'
+    );
+    if (!confirmed) return;
+
+    setError(null);
+    setSuccess(null);
+    setMigrationResult(null);
+    setIsMigratingBackup(true);
+    try {
+      const result = await api.app.migrateFromFullBackup(migrationFile);
+      setMigrationResult(result.migration);
+      const warningSuffix = result.migration.warnings.length > 0
+        ? ` Migration completed with ${result.migration.warnings.length} warning${result.migration.warnings.length === 1 ? '' : 's'}.`
+        : '';
+      setSuccess(
+        `Full Baseline restored: ${result.migration.totalRowsRestored.toLocaleString()} database rows and ${result.migration.uploadsRestored.toLocaleString()} files.${warningSuffix} Review the restore report, then continue with an account from the original instance.`
+      );
+      setMigrationFile(null);
+      const [statusResult] = await Promise.allSettled([
+        api.app.getInstallStatus(),
+        refreshRuntimeConfig(),
+        refreshInstallSummary()
+      ]);
+      if (statusResult.status === 'fulfilled') setStatus(statusResult.value);
+    } catch (err: any) {
+      setError(err.message || 'Failed to restore the Full Baseline backup.');
+    } finally {
+      setIsMigratingBackup(false);
     }
   };
 
@@ -376,6 +425,81 @@ const Install: React.FC<InstallPageProps> = ({ initialStatus, onStatusChange }) 
                 </button>
               </form>
             </div>
+
+            {status.capabilities.allowBackupMigration && (
+              <div className="rounded-3xl border border-cyan-500/30 bg-slate-900/80 p-6 shadow-xl">
+                <div className="flex items-center gap-3">
+                  <Database className="text-cyan-300" size={20} />
+                  <h2 className="text-lg font-bold text-white">Migrate from a Full Baseline</h2>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                  Load a Full Baseline ZIP downloaded from System Operations on your existing AIMANA instance. This restores its database and uploaded files, including its user accounts. Incremental backups are not accepted here.
+                </p>
+                <div className="mt-4 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-xs leading-relaxed text-amber-100">
+                  Use this only on a new installation. The migration replaces its database and uploads. Maximum Full Baseline ZIP size: <strong>1 GB</strong>. Runtime secrets in <code>.env</code> are kept from this installation, so configure its authentication, AI, and identity settings separately.
+                </div>
+                <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <label htmlFor="install-full-backup" className="mb-2 block text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Full Baseline ZIP</label>
+                    <input
+                      id="install-full-backup"
+                      type="file"
+                      accept=".zip,application/zip"
+                      onChange={(event) => setMigrationFile(event.target.files?.[0] || null)}
+                      className="block w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-800 file:px-3 file:py-2 file:text-xs file:font-bold file:text-cyan-200"
+                    />
+                    {migrationFile && (
+                      <div className={`mt-2 truncate text-xs ${migrationFileTooLarge ? 'text-red-300' : 'text-slate-500'}`}>
+                        Selected: {migrationFile.name} ({formatFileSize(migrationFile.size)})
+                        {migrationFileTooLarge && ' — exceeds the 1 GB limit'}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleMigrateBackup()}
+                    disabled={!migrationFile || migrationFileTooLarge || isMigratingBackup}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-950 transition-colors hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isMigratingBackup ? <><Loader2 size={14} className="animate-spin" /> Restoring</> : 'Restore Full Baseline'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {migrationResult && (
+              <div className="rounded-3xl border border-emerald-500/30 bg-slate-900/80 p-6 shadow-xl">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="text-emerald-300" size={20} />
+                  <h2 className="text-lg font-bold text-white">Migration Report</h2>
+                </div>
+                <p className="mt-3 break-all text-xs text-slate-400">{migrationResult.fileName}</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Database Rows</div>
+                    <div className="mt-1 text-lg font-bold text-white">{migrationResult.totalRowsRestored.toLocaleString()}</div>
+                  </div>
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Uploaded Files</div>
+                    <div className="mt-1 text-lg font-bold text-white">{migrationResult.uploadsRestored.toLocaleString()}</div>
+                  </div>
+                  <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Source Version</div>
+                    <div className="mt-1 text-lg font-bold text-white">{migrationResult.sourceVersion || 'Unknown'}</div>
+                  </div>
+                </div>
+                {migrationResult.warnings.length > 0 && (
+                  <div className="mt-4 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-xs text-amber-100">
+                    <div className="font-black uppercase tracking-[0.16em]">{migrationResult.warnings.length} Restore Warning{migrationResult.warnings.length === 1 ? '' : 's'}</div>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {migrationResult.warnings.slice(0, 5).map((warning, index) => <li key={`${index}-${warning}`}>{warning}</li>)}
+                    </ul>
+                    {migrationResult.warnings.length > 5 && <p className="mt-2">Additional warnings were returned by the server.</p>}
+                  </div>
+                )}
+                <p className="mt-4 text-sm text-slate-300">Sign in with an account from the original instance. Its old sessions were cleared; you will sign in again using its account credentials.</p>
+              </div>
+            )}
 
             {!status.admin.exists && (
               <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl">
@@ -629,7 +753,7 @@ const Install: React.FC<InstallPageProps> = ({ initialStatus, onStatusChange }) 
                     <div className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Admin Account</div>
                     <p className="mt-2 text-sm text-slate-200">
                       {installSummary.adminAccount
-                        ? `${installSummary.adminAccount.name} (${installSummary.adminAccount.email})`
+                        ? 'Initial administrator is configured.'
                         : 'No admin account detected.'}
                     </p>
                   </div>
@@ -638,7 +762,7 @@ const Install: React.FC<InstallPageProps> = ({ initialStatus, onStatusChange }) 
                       <FolderTree size={12} />
                       Storage Path
                     </div>
-                    <p className="mt-2 break-all text-sm text-slate-200">{installSummary.storage.root}</p>
+                    <p className="mt-2 text-sm text-slate-200">Local storage is configured for this instance.</p>
                   </div>
                 </div>
 
@@ -688,7 +812,10 @@ const Install: React.FC<InstallPageProps> = ({ initialStatus, onStatusChange }) 
               <div className="space-y-3">
                 <button
                   type="button"
-                  onClick={() => navigate('/login')}
+                  onClick={async () => {
+                    if (migrationResult) await onStatusChange(status);
+                    navigate('/login');
+                  }}
                   className="w-full rounded-2xl border border-slate-700 bg-slate-900/80 px-4 py-3 text-xs font-black uppercase tracking-[0.18em] text-slate-200 transition-colors hover:border-slate-500 hover:text-white"
                 >
                   Continue To Login

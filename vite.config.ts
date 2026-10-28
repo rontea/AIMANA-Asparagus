@@ -15,11 +15,11 @@ export default defineConfig(({ mode }) => {
   const FRONTEND_PORT = parseInt(env.FRONTEND_PORT || '3000');
   const BACKEND_PORT = parseInt(env.PORT || env.BACKEND_PORT || '3001');
 
-  // Stringify all values for process.env definition
-  const isValidIdentifier = (key: string) => /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key);
-  const envWithProcessPrefix = Object.entries(env).reduce<Record<string, string>>((prev, [key, val]) => {
-    if (!isValidIdentifier(key)) return prev;
-    prev[`process.env.${key}`] = JSON.stringify(val);
+  // Only expose values that are intentionally public in browser code.
+  // Provider credentials and server settings must never be copied into the bundle.
+  const browserEnvKeys = ['GOOGLE_CLIENT_ID', 'GOOGLE_API_KEY'] as const;
+  const browserEnvDefines = browserEnvKeys.reduce<Record<string, string>>((prev, key) => {
+    prev[`process.env.${key}`] = JSON.stringify(env[key] || '');
     return prev;
   }, {});
 
@@ -30,14 +30,13 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './'),
       },
     },
-    // Define process.env properly for the frontend
-    define: envWithProcessPrefix,
+    define: browserEnvDefines,
     test: {
       environment: 'jsdom',
       setupFiles: './tests/setup.ts',
       css: true,
       include: ['**/*.{test,spec}.{ts,tsx}'],
-      exclude: ['server/**', 'node_modules/**', 'dist/**']
+      exclude: ['server/**', 'node_modules/**', 'dist/**', '.tmp/**']
     },
     build: {
       outDir: 'dist',

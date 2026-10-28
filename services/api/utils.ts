@@ -12,11 +12,14 @@ export const handleResponse = async (res: Response) => {
             throw new Error('Session expired. Please sign in again.');
         }
         const err = await res.json().catch(() => ({ error: res.statusText }));
+        const errorLabel = String(err.error || `Request failed: ${res.status}`);
+        const serverMessage = String(err.message || '').trim();
+        const serverMessageSuffix = serverMessage && serverMessage !== errorLabel ? `: ${serverMessage}` : '';
         const details = Array.isArray(err.details)
             ? err.details.map((detail: unknown) => String(detail || '').trim()).filter(Boolean)
             : [];
         const detailMessage = details.length > 0 ? `: ${details.slice(0, 3).join('; ')}` : '';
-        throw new Error(`${err.error || `Request failed: ${res.status}`}${detailMessage}`);
+        throw new Error(`${errorLabel}${serverMessageSuffix}${detailMessage}`);
     }
     return res.json();
 };

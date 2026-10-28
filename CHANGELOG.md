@@ -3,6 +3,37 @@
 All notable changes to **AIMANA Asparagus** are documented in this file.  
 This project adheres to [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/) standards.
 
+For internal technical implementation details and architecture notes, see [CHANGELOG_INTERNAL.md](./CHANGELOG_INTERNAL.md).
+
+---
+
+## [0.16.101] - 2026-10-29
+
+> **Highlights:** Direct Full Baseline backup migration in the first-run installer; streaming ZIP extraction with `yauzl` for large backups up to 1 GB; sensitive data exposure hardening across frontend environment bundles, backend Google AI proxying, and upload authentication; and comprehensive operational guides in [`docs/`](./docs/).
+
+### 🚀 Installation & Backup Migration
+- **First-Run Baseline Migration**: Restore full SQLite database snapshots and user-uploaded media files directly from a single System Operations Full Baseline ZIP archive before initial admin account setup (`POST /api/app/bootstrap/migrate`).
+- **Clean-State Validation**: Dynamic capability checking (`allowBackupMigration`) ensures migration can only run on pristine instances with zero registered users, no existing workspace directory structure, and unfinalized installer state.
+- **Migration Reporting**: Real-time visual progress and post-migration report in the installer UI showing total database rows restored, media assets extracted, source instance version, and non-fatal warnings.
+- **Concurrency Locking**: Installer mutations are locked with a `409 Conflict` barrier while a migration task is actively executing to prevent database corruption.
+
+### 🛡️ Security & Sensitive Data Hardening
+- **Client Bundle Credential Isolation**: Restricted Vite frontend environment defines to only explicitly allowlisted public variables (`GOOGLE_CLIENT_ID`, `GOOGLE_API_KEY`). Server credentials (`API_KEY`, `AUTH_SECRET`, etc.) are strictly kept out of generated client bundles.
+- **Server-Side Google AI Proxy**: Routed Google AI text generation, multimodal analysis, image generation, and speech requests through an authenticated backend route (`POST /api/proxy/google/generate`), avoiding direct client exposure of server-side Gemini API keys.
+- **Protected Upload Static Serving**: Enforced authenticated session checks (`requireAuth`) on `/storage/uploads` and legacy `/uploads` static file routes to block unauthorized asset retrieval.
+- **Installer Information Disclosure Hardening**: Redacted administrator user identity and absolute filesystem paths from public installer status and summary endpoints (`/api/app/install/status`, `/api/app/install/summary`), and fully masked runtime configuration secrets.
+- **Generic Internal Error Shielding**: Replaced unhandled server error messages with safe generic client responses (`Internal server error`) to prevent leaking internal exception traces, database structures, and runtime internals.
+
+### ⚡ Infrastructure & Architecture
+- **Streaming Zip Decompression (`yauzl`)**: Migrated installer upload processing from in-memory buffers to streaming disk-backed extraction (`storage/.install-upload-*`), safely handling large multi-hundred-megabyte archives up to 1 GB without Node.js heap exhaustion.
+- **Unified Backup/Restore Engine**: Extracted core backup parsing, topological table ordering, and path traversal security sanitization into a shared utility ([`server/utils/backupRestore.js`](./server/utils/backupRestore.js)), eliminating code duplication between the installer and admin disaster recovery routes.
+
+### 📖 Documentation & Operations
+- **Manual Migration Guide**: Added [`docs/migration.md`](./docs/migration.md) providing step-by-step procedures for live installer migration, offline zero-downtime database cutovers, and baseline-plus-incremental restore chains.
+- **Environment Reference Guide**: Added [`docs/environment.md`](./docs/environment.md) documenting all security, authentication, AI provider, and chat ingestion configuration variables.
+- **README Cross-References**: Updated [`README.md`](./README.md) with quick links to migration and manual restore procedures.
+- **Version Bump**: Bumped package manifests to `0.16.101`.
+
 ---
 
 ## [0.16.100] - 2026-10-20
@@ -52,6 +83,9 @@ This project adheres to [Semantic Versioning](https://semver.org/) and [Keep a C
 
 | Commit | Date | Summary |
 | :--- | :--- | :--- |
+| [`a881f9c`](https://github.com/rontea/AIMANA-Asparagus/commit/a881f9c) | 2026-10-20 | docs(changelog): format changelog with clear visual hierarchy, highlights, and commit table |
+| [`3f68dcf`](https://github.com/rontea/AIMANA-Asparagus/commit/3f68dcf) | 2026-10-20 | docs(changelog): sanitize commits to match AIMANA-Asparagus git history |
+| [`d4ce1c9`](https://github.com/rontea/AIMANA-Asparagus/commit/d4ce1c9) | 2026-10-20 | docs(changelog): record commit id 9d999f0 for 0.16.100 release |
 | [`9d999f0`](https://github.com/rontea/AIMANA-Asparagus/commit/9d999f0) | 2026-10-20 | release: bump to 0.16.100, add changelogs, multi-lane hub renewal, and catalog reconciliation |
 | [`1d0a6fe`](https://github.com/rontea/AIMANA-Asparagus/commit/1d0a6fe) | 2026-06-27 | BYOP added |
 | [`4901b46`](https://github.com/rontea/AIMANA-Asparagus/commit/4901b46) | 2026-06-27 | fix(backend) Checkpoint hub and audio |

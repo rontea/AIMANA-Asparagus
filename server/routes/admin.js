@@ -4,27 +4,68 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
-import JSZip from 'jszip';
 import sqlite3 from 'sqlite3';
 import { ZipArchive } from 'archiver';
-import { dbAll, dbRun, dbGet, hashPassword, logSystemEvent, DB_FILE, UPLOADS_DIR } from '../db.js';
+import { dbAll, dbRun, dbGet, hashPassword, logSystemEvent, DB_FILE, STORAGE_DIR, UPLOADS_DIR } from '../db.js';
 import { superAdminOnly } from '../middleware.js';
 import { getPhysicalPathFromUrl } from '../utils/paths.js';
 import { loadExtensionServerServices } from '../extensions/api.js';
+import { applyManifestFull, asTableMap, orderTableNames, parseBackupBundle, restoreUploadsFromZip } from '../utils/backupRestore.js';
 
 const router = express.Router();
 const PACKAGE_JSON_PATH = path.resolve(process.cwd(), 'package.json');
 const BACKUP_STATE_KEY = 'backup_state';
-const RESTORE_UPLOAD_LIMIT_BYTES = 1024 * 1024 * 1024; // 1GB per bundle
+const RESTORE_UPLOAD_LIMIT_BYTES = 1024 * 1024 * 1024;
 const RESTORE_UPLOAD_MAX_FILES = 12;
 const DB_SNAPSHOT_DIR = path.join(path.dirname(DB_FILE), 'snapshots');
 const restoreUpload = multer({
-    storage: multer.memoryStorage(),
+    storage: multer.diskStorage({
+        destination: (req, _file, callback) => {
+            try {
+                if (!req.restoreUploadTempDir) {
+                    req.restoreUploadTempDir = fs.mkdtempSync(path.join(STORAGE_DIR, '.restore-upload-'));
+                }
+                callback(null, req.restoreUploadTempDir);
+            } catch (error) {
+                callback(error);
+            }
+        },
+        filename: (_req, _file, callback) => callback(null, `${uuidv4()}.zip`)
+    }),
     limits: {
         fileSize: RESTORE_UPLOAD_LIMIT_BYTES,
         files: RESTORE_UPLOAD_MAX_FILES
     }
 });
+
+const cleanupRestoreUpload = (req) => {
+    if (!req.restoreUploadTempDir) return;
+    try {
+        fs.rmSync(req.restoreUploadTempDir, { recursive: true, force: true });
+    } catch {
+        // Temporary uploads are best-effort cleanup and are not part of the live backup set.
+    }
+};
+
+const handleRestoreUpload = (req, res, next) => {
+    restoreUpload.array('backups', RESTORE_UPLOAD_MAX_FILES)(req, res, (error) => {
+        if (error) {
+            cleanupRestoreUpload(req);
+            const tooLarge = error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE';
+            const tooManyFiles = error instanceof multer.MulterError && error.code === 'LIMIT_FILE_COUNT';
+            return res.status(tooLarge ? 413 : error instanceof multer.MulterError ? 400 : 500).json({
+                error: tooLarge
+                    ? 'A backup ZIP exceeds the 1 GB per-file restore limit.'
+                    : tooManyFiles
+                    ? `Upload no more than ${RESTORE_UPLOAD_MAX_FILES} backup ZIPs per restore.`
+                    : error.message
+            });
+        }
+        res.once('finish', () => cleanupRestoreUpload(req));
+        res.once('close', () => cleanupRestoreUpload(req));
+        next();
+    });
+};
 
 const getAppVersion = () => {
     try {
@@ -481,59 +522,6 @@ const buildSystemDumpPayload = async () => {
     };
 };
 
-const asTableMap = (manifest, modeLabel) => {
-    if (!manifest || typeof manifest !== 'object') {
-        throw new Error(`Invalid ${modeLabel} manifest payload`);
-    }
-    const data = manifest.data;
-    if (!data || typeof data !== 'object') {
-        throw new Error(`Invalid ${modeLabel} manifest: missing "data" object`);
-    }
-    return data;
-};
-
-const tablePriorityOrder = [
-    'users',
-    'auth_sessions',
-    'projects',
-    'custom_project_types',
-    'project_collections',
-    'items',
-    'revisions',
-    'project_members',
-    'chat_memory',
-    'chat_sessions',
-    'chat_session_attachments',
-    'chat_items',
-    'chat_item_attachments',
-    'rag_chunks',
-    'item_references',
-    'reference_assets',
-    'lab_workspace_state',
-    'custom_engines',
-    'bulk_presets',
-    'neural_variable_registry_lists',
-    'prompt_manager_drafts',
-    'active_variable_registry_entries',
-    'archived_variable_registry_entries',
-    'bulk_studio_state',
-    'extension_migrations',
-    'extension_migration_failures',
-    'system_logs',
-    'error_reports',
-    'settings'
-];
-
-const orderTableNames = (tables) => {
-    const indexByName = new Map(tablePriorityOrder.map((name, idx) => [name, idx]));
-    return [...tables].sort((a, b) => {
-        const ai = indexByName.has(a) ? indexByName.get(a) : Number.MAX_SAFE_INTEGER;
-        const bi = indexByName.has(b) ? indexByName.get(b) : Number.MAX_SAFE_INTEGER;
-        if (ai !== bi) return ai - bi;
-        return String(a).localeCompare(String(b));
-    });
-};
-
 const getTableColumns = async (tableName) => {
     const sql = `PRAGMA table_info(${quoteIdentifier(tableName)})`;
     const columns = await dbAll(sql);
@@ -565,64 +553,6 @@ const resolveSafeUploadTarget = (relativePath) => {
     return { normalized, target };
 };
 
-const parseBackupBundle = async (uploadedFile) => {
-    const zip = await JSZip.loadAsync(uploadedFile.buffer);
-    const systemManifestEntry = zip.file('SYSTEM_MANIFEST.json');
-    const deltaManifestEntry = zip.file('DELTA_MANIFEST.json');
-
-    if (systemManifestEntry) {
-        const raw = await systemManifestEntry.async('string');
-        const manifest = JSON.parse(raw);
-        return {
-            fileName: uploadedFile.originalname,
-            type: 'full',
-            manifest,
-            zip
-        };
-    }
-    if (deltaManifestEntry) {
-        const raw = await deltaManifestEntry.async('string');
-        const manifest = JSON.parse(raw);
-        const infoEntry = zip.file('DELTA_INFO.json');
-        let deltaInfo = null;
-        if (infoEntry) {
-            try {
-                deltaInfo = JSON.parse(await infoEntry.async('string'));
-            } catch {
-                deltaInfo = null;
-            }
-        }
-        return {
-            fileName: uploadedFile.originalname,
-            type: 'incremental',
-            manifest,
-            deltaInfo,
-            zip
-        };
-    }
-
-    throw new Error(`Unsupported backup bundle (${uploadedFile.originalname}). Missing SYSTEM_MANIFEST.json or DELTA_MANIFEST.json.`);
-};
-
-const insertRows = async ({ tableName, rows, columns }) => {
-    let touched = 0;
-    for (const row of rows) {
-        if (!row || typeof row !== 'object') continue;
-        const available = columns.filter((col) => Object.prototype.hasOwnProperty.call(row, col));
-        if (available.length === 0) {
-            await dbRun(`INSERT INTO ${quoteIdentifier(tableName)} DEFAULT VALUES`);
-            touched++;
-            continue;
-        }
-        const placeholders = available.map(() => '?').join(', ');
-        const sql = `INSERT INTO ${quoteIdentifier(tableName)} (${available.map(quoteIdentifier).join(', ')}) VALUES (${placeholders})`;
-        const values = available.map((name) => row[name]);
-        await dbRun(sql, values);
-        touched++;
-    }
-    return touched;
-};
-
 const upsertRows = async ({ tableName, rows, columns, primaryKeyColumns }) => {
     let touched = 0;
     for (const row of rows) {
@@ -649,50 +579,6 @@ const upsertRows = async ({ tableName, rows, columns, primaryKeyColumns }) => {
         touched++;
     }
     return touched;
-};
-
-const applyManifestFull = async (manifest, warnings) => {
-    const data = asTableMap(manifest, 'full');
-    const tableNames = orderTableNames(Object.keys(data));
-    const summary = {
-        mode: 'full',
-        tables: {},
-        totalRowsTouched: 0
-    };
-
-    await dbRun('PRAGMA foreign_keys = OFF');
-    await dbRun('BEGIN IMMEDIATE TRANSACTION');
-    try {
-        for (const tableName of tableNames) {
-            const rows = data[tableName];
-            if (!Array.isArray(rows)) continue;
-            const tableColumnsMeta = await getTableColumns(tableName);
-            if (!tableColumnsMeta.length) {
-                warnings.push(`Skipping unknown table in full manifest: ${tableName}`);
-                continue;
-            }
-            await dbRun(`DELETE FROM ${quoteIdentifier(tableName)}`);
-        }
-
-        for (const tableName of tableNames) {
-            const rows = data[tableName];
-            if (!Array.isArray(rows)) continue;
-            const tableColumnsMeta = await getTableColumns(tableName);
-            if (!tableColumnsMeta.length) continue;
-            const columns = tableColumnsMeta.map((col) => col.name);
-            const touched = await insertRows({ tableName, rows, columns });
-            summary.tables[tableName] = touched;
-            summary.totalRowsTouched += touched;
-        }
-        await dbRun('COMMIT');
-    } catch (error) {
-        await dbRun('ROLLBACK');
-        throw error;
-    } finally {
-        await dbRun('PRAGMA foreign_keys = ON');
-    }
-
-    return summary;
 };
 
 const applyManifestIncremental = async (manifest, warnings) => {
@@ -756,31 +642,6 @@ const applyManifestIncremental = async (manifest, warnings) => {
     }
 
     return summary;
-};
-
-const restoreUploadsFromZip = async (zip, { clearExisting = false, warnings = [] } = {}) => {
-    const uploadEntries = Object.values(zip.files).filter((entry) => !entry.dir && entry.name.startsWith('uploads/'));
-
-    if (clearExisting) {
-        fs.rmSync(UPLOADS_DIR, { recursive: true, force: true });
-        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-    }
-
-    let restored = 0;
-    for (const entry of uploadEntries) {
-        const relative = entry.name.replace(/^uploads\//, '');
-        const target = resolveSafeUploadTarget(relative);
-        if (!target) {
-            warnings.push(`Skipped unsafe upload path: ${entry.name}`);
-            continue;
-        }
-        fs.mkdirSync(path.dirname(target.target), { recursive: true });
-        const content = await entry.async('nodebuffer');
-        fs.writeFileSync(target.target, content);
-        restored++;
-    }
-
-    return restored;
 };
 
 const validateRestoreChain = ({ selectedFull, selectedIncrementals, warnings, errors }) => {
@@ -867,7 +728,7 @@ router.put('/backup/state', async (req, res) => {
     }
 });
 
-router.post('/backup/restore', restoreUpload.array('backups', RESTORE_UPLOAD_MAX_FILES), async (req, res) => {
+router.post('/backup/restore', handleRestoreUpload, async (req, res) => {
     const userId = req.user?.id || 'system';
     const uploadedFiles = Array.isArray(req.files) ? req.files : [];
 
@@ -937,7 +798,7 @@ router.post('/backup/restore', restoreUpload.array('backups', RESTORE_UPLOAD_MAX
 
         if (selectedFull) {
             const fullSummary = await applyManifestFull(selectedFull.manifest, warnings);
-            const restoredUploads = await restoreUploadsFromZip(selectedFull.zip, {
+            const restoredUploads = await restoreUploadsFromZip(selectedFull.archivePath, {
                 clearExisting: clearUploadsOnFull,
                 warnings
             });
@@ -952,7 +813,7 @@ router.post('/backup/restore', restoreUpload.array('backups', RESTORE_UPLOAD_MAX
 
         for (const incremental of selectedIncrementals) {
             const incrementalSummary = await applyManifestIncremental(incremental.manifest, warnings);
-            const restoredUploads = await restoreUploadsFromZip(incremental.zip, {
+            const restoredUploads = await restoreUploadsFromZip(incremental.archivePath, {
                 clearExisting: false,
                 warnings
             });

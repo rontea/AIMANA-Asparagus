@@ -1,10 +1,9 @@
 
 import { useState, useCallback } from 'react';
-import { GeneratedImageResult, GeminiImageModel, generateImageWithGemini, generateSpeechWithGemini } from '../services/geminiService';
+import { GeneratedImageResult, GeminiImageModel, generateGoogleContent, generateImageWithGemini, generateSpeechWithGemini } from '../services/geminiService';
 import { PollinationsModel, generateMediaWithPollinations, getResolvedDimensions, ensureReferenceAsset } from '../services/pollinationsService';
 import { RATIO_CONFIG } from '../components/project/lab/LabSidebar';
 import { SupportedEngine, loadDynamicRegistry } from '../components/project/lab/ModelSelector/registry/index';
-import { GoogleGenAI } from '@google/genai';
 import { api } from '../services/api';
 import { ItemWithCurrentRevision } from '../types';
 import { formatPollenAmount, getPrimaryModelCreditRate, resolvePollenCharge } from '../utils/pollenCredits';
@@ -523,8 +522,7 @@ export const useAiGeneration = () => {
                     res = { base64: '', mimeType: 'text/plain', text: await proxyRes.text(), pollenUsed, referenceItemId, referenceHash };
                 }
             } else if (category === 'Language') {
-                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                const response = await ai.models.generateContent({
+                const response = await generateGoogleContent({
                     model: resolvedModelId as string,
                     contents: [{ role: 'user', parts: [{ text: prompt }] }],
                     config: { temperature: advanced?.temperature ?? 0.7 }

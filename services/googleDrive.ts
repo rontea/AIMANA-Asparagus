@@ -1,24 +1,9 @@
 
 // Real Google Drive API Service using GSI (Google Identity Services) and GAPI
 
-// Support both process.env (Node/Compat) and import.meta.env (Vite)
-const getEnv = (key: string) => {
-    // @ts-ignore
-    const processVal = typeof process !== 'undefined' ? process.env?.[key] : undefined;
-    // @ts-ignore
-    const viteVal = (import.meta as any).env?.[`VITE_${key}`];
-    
-    // Check direct key or VITE_ prefixed key in both sources
-    return processVal || 
-           // @ts-ignore
-           (typeof process !== 'undefined' ? process.env?.[`VITE_${key}`] : undefined) ||
-           viteVal || 
-           (import.meta as any).env?.[key] || 
-           '';
-};
-
-const CLIENT_ID = getEnv('GOOGLE_CLIENT_ID');
-const API_KEY = getEnv('GOOGLE_API_KEY'); 
+// Vite only defines these explicitly allowlisted, browser-facing values.
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
+const API_KEY = process.env.GOOGLE_API_KEY || (import.meta as any).env?.VITE_GOOGLE_API_KEY || '';
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file openid email profile';
 

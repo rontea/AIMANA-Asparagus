@@ -1,4 +1,3 @@
-import { GoogleGenAI, Modality } from "@google/genai";
 import { blobToBase64 } from "./db";
 import {
   DEFAULT_GOOGLE_IMAGE_MODEL,
@@ -22,6 +21,24 @@ export interface GeminiTtsOptions {
   voiceName?: string;
   dynamicParams?: Record<string, any>;
 }
+
+export const generateGoogleContent = async ({ model, contents, config }: {
+  model: string;
+  contents: unknown;
+  config?: Record<string, unknown>;
+}): Promise<any> => {
+  const response = await fetch('/api/proxy/google/generate', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, contents, config })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Google AI request failed.');
+  }
+  return payload;
+};
 
 interface GeminiInlineImagePart {
   inlineData: {
@@ -183,7 +200,6 @@ export const generateSpeechWithGemini = async (
   text: string,
   options: GeminiTtsOptions = {}
 ): Promise<GeneratedImageResult> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const dynamicParams = options.dynamicParams || {};
   const multiSpeakerEnabled = Boolean(dynamicParams.multiSpeakerEnabled);
   const primaryVoice = getTrimmedString(dynamicParams.voiceName) || getTrimmedString(options.voiceName) || 'Kore';
@@ -224,11 +240,11 @@ export const generateSpeechWithGemini = async (
       speechConfig.languageCode = languageCode;
     }
 
-    const response = await ai.models.generateContent({
+    const response = await generateGoogleContent({
       model: options.model || DEFAULT_GOOGLE_TTS_MODEL,
       contents: [{ parts: [{ text: prompt }] }],
       config: {
-        responseModalities: [Modality.AUDIO],
+        responseModalities: ['AUDIO'],
         speechConfig,
       },
     });
@@ -268,8 +284,6 @@ export const generateImageWithGemini = async (
   seed?: number,
   inputImage?: string | null
 ): Promise<GeneratedImageResult> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
   try {
     const config: any = {
       imageConfig: {
@@ -291,7 +305,7 @@ export const generateImageWithGemini = async (
       ? [{ text: prompt }, referenceImagePart]
       : [{ text: prompt }];
 
-    const response = await ai.models.generateContent({
+    const response = await generateGoogleContent({
       model: model,
       contents: {
         parts: contentParts,
@@ -328,8 +342,6 @@ export const generateImageWithGemini = async (
 };
 
 export const analyzeAssetWithGemini = async (file: Blob, mimeType: string): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  
   try {
     const base64Data = await blobToBase64(file);
     let prompt = "Describe this file in detail.";
@@ -342,7 +354,7 @@ export const analyzeAssetWithGemini = async (file: Blob, mimeType: string): Prom
         model = "gemini-2.5-flash-native-audio-preview-12-2025";
     }
 
-    const response = await ai.models.generateContent({
+    const response = await generateGoogleContent({
       model: model,
       contents: {
         parts: [

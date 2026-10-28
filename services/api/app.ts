@@ -7,6 +7,19 @@ export interface AppVersionPayload {
     checkedAt: number;
 }
 
+export interface InstallBackupMigrationResult {
+    success: boolean;
+    migration: {
+        fileName: string;
+        sourceVersion: string | null;
+        sourceTimestamp: number | null;
+        totalRowsRestored: number;
+        uploadsRestored: number;
+        backupStatus: 'complete' | 'partial' | null;
+        warnings: string[];
+    };
+}
+
 export const app = {
     getVersion: async (): Promise<AppVersionPayload> => {
         const res = await fetch(`${API_BASE}/app/version`, {
@@ -25,6 +38,15 @@ export const app = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
+        });
+        return handleResponse(res);
+    },
+    migrateFromFullBackup: async (file: File): Promise<InstallBackupMigrationResult> => {
+        const form = new FormData();
+        form.append('backup', file, file.name);
+        const res = await fetch(`${API_BASE}/app/bootstrap/migrate`, {
+            method: 'POST',
+            body: form
         });
         return handleResponse(res);
     },

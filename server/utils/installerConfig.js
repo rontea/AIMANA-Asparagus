@@ -14,7 +14,8 @@ const SECRET_KEYS = new Set([
     'API_KEY',
     'POLLINATIONS_API_KEY',
     'AIRFORCE_API_KEY',
-    'TAVILY_API_KEY'
+    'TAVILY_API_KEY',
+    'GOOGLE_API_KEY'
 ]);
 
 const CONFIG_FIELDS = [
@@ -156,12 +157,11 @@ const normalizeValue = (value) => {
     return String(value).trim();
 };
 
-const maskValue = (key, value) => {
+const maskValue = (key, value, forceMask = false) => {
     const normalized = normalizeValue(value);
     if (!normalized) return '';
-    if (!SECRET_KEYS.has(key)) return normalized;
-    if (normalized.length <= 8) return '********';
-    return `${normalized.slice(0, 3)}${'*'.repeat(Math.max(4, normalized.length - 6))}${normalized.slice(-3)}`;
+    if (!SECRET_KEYS.has(key) && !forceMask) return normalized;
+    return '********';
 };
 
 const setProcessEnvValue = (key, value) => {
@@ -223,8 +223,8 @@ export const getInstallerRuntimeConfig = () => {
                     description: field.description,
                     impact: field.impact,
                     configured,
-                    currentValue: isSecret ? '' : rawValue,
-                    maskedValue: maskValue(field.key, rawValue),
+                    currentValue: isSecret || field.kind === 'secret' ? '' : rawValue,
+                    maskedValue: maskValue(field.key, rawValue, field.kind === 'secret'),
                     options: field.options || null
                 };
             });

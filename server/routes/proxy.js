@@ -1,4 +1,5 @@
 import express from 'express';
+import { GoogleGenAI } from '@google/genai';
 import { logSystemEvent, dbGet, dbRun, createErrorReport } from '../db.js';
 import { requireAdmin } from '../middleware.js';
 import { ensureReferenceAsset } from '../logic/referenceAssets.js';
@@ -22,6 +23,35 @@ const POLLEN_CREDIT_STATE_KEY_PREFIX = 'pollen_credit_state_v1:';
 const POLLEN_CREDIT_DEFAULT_ESTIMATE = 0.01;
 const APP_CONFIG_KEY = 'app_config';
 const DEFAULT_MANUAL_POLLEN_HOURLY_RATE = 0.15;
+
+router.post('/google/generate', async (req, res) => {
+    const userId = req.user?.id || 'anonymous';
+    const model = String(req.body?.model || '').trim();
+    const contents = req.body?.contents;
+    const config = req.body?.config;
+    const apiKey = String(process.env.API_KEY || '').trim();
+
+    if (!model || model.length > 200 || contents == null) {
+        return res.status(400).json({ error: 'A valid model and content are required.' });
+    }
+    if (!apiKey) {
+        return res.status(503).json({ error: 'Google AI is not configured.' });
+    }
+
+    try {
+        const ai = new GoogleGenAI({ apiKey });
+        const response = await ai.models.generateContent({ model, contents, config });
+        return res.json({
+            candidates: response.candidates || [],
+            usageMetadata: response.usageMetadata || null,
+            text: response.text || ''
+        });
+    } catch (error) {
+        console.error(`[GOOGLE_AI_ERR] ${error?.name || 'Google AI request failed'}`);
+        await logSystemEvent('ERROR', 'GOOGLE_AI', `Google AI request failed for model ${model}`, userId);
+        return res.status(502).json({ error: 'Google AI request failed.' });
+    }
+});
 
 const resolveProxyErrorStatus = (message = '') => {
     const lower = String(message || '').toLowerCase();

@@ -156,9 +156,8 @@ export const globalErrorHandler = async (err, req, res, next) => {
         return next(err);
     }
 
-    res.status(500).json({ 
-        error: "Neural Pipeline Failure", 
-        message: err.message,
-        eventId: Date.now() 
+    res.status(500).json({
+        error: 'Internal server error',
+        eventId: Date.now()
     });
 };
