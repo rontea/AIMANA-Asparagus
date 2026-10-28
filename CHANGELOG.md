@@ -12,27 +12,27 @@ For internal technical implementation details and architecture notes, see [CHANG
 > **Highlights:** Direct Full Baseline backup migration in the first-run installer; streaming ZIP extraction with `yauzl` for large backups up to 1 GB; sensitive data exposure hardening across frontend environment bundles, backend Google AI proxying, and upload authentication; and comprehensive operational guides in [`docs/`](./docs/).
 
 ### 🚀 Installation & Backup Migration
-- **First-Run Baseline Migration**: Restore full SQLite database snapshots and user-uploaded media files directly from a single System Operations Full Baseline ZIP archive before initial admin account setup (`POST /api/app/bootstrap/migrate`).
-- **Clean-State Validation**: Dynamic capability checking (`allowBackupMigration`) ensures migration can only run on pristine instances with zero registered users, no existing workspace directory structure, and unfinalized installer state.
-- **Migration Reporting**: Real-time visual progress and post-migration report in the installer UI showing total database rows restored, media assets extracted, source instance version, and non-fatal warnings.
-- **Concurrency Locking**: Installer mutations are locked with a `409 Conflict` barrier while a migration task is actively executing to prevent database corruption.
+- **First-Run Baseline Migration**: Restore full SQLite database snapshots and user-uploaded media files directly from a single System Operations Full Baseline ZIP archive before initial admin account setup (`POST /api/app/bootstrap/migrate`) ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Clean-State Validation**: Dynamic capability checking (`allowBackupMigration`) ensures migration can only run on pristine instances with zero registered users, no existing workspace directory structure, and unfinalized installer state ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Migration Reporting**: Real-time visual progress and post-migration report in the installer UI showing total database rows restored, media assets extracted, source instance version, and non-fatal warnings ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Concurrency Locking**: Installer mutations are locked with a `409 Conflict` barrier while a migration task is actively executing to prevent database corruption ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
 
 ### 🛡️ Security & Sensitive Data Hardening
-- **Client Bundle Credential Isolation**: Restricted Vite frontend environment defines to only explicitly allowlisted public variables (`GOOGLE_CLIENT_ID`, `GOOGLE_API_KEY`). Server credentials (`API_KEY`, `AUTH_SECRET`, etc.) are strictly kept out of generated client bundles.
-- **Server-Side Google AI Proxy**: Routed Google AI text generation, multimodal analysis, image generation, and speech requests through an authenticated backend route (`POST /api/proxy/google/generate`), avoiding direct client exposure of server-side Gemini API keys.
-- **Protected Upload Static Serving**: Enforced authenticated session checks (`requireAuth`) on `/storage/uploads` and legacy `/uploads` static file routes to block unauthorized asset retrieval.
-- **Installer Information Disclosure Hardening**: Redacted administrator user identity and absolute filesystem paths from public installer status and summary endpoints (`/api/app/install/status`, `/api/app/install/summary`), and fully masked runtime configuration secrets.
-- **Generic Internal Error Shielding**: Replaced unhandled server error messages with safe generic client responses (`Internal server error`) to prevent leaking internal exception traces, database structures, and runtime internals.
+- **Client Bundle Credential Isolation**: Restricted Vite frontend environment defines to only explicitly allowlisted public variables (`GOOGLE_CLIENT_ID`, `GOOGLE_API_KEY`). Server credentials (`API_KEY`, `AUTH_SECRET`, etc.) are strictly kept out of generated client bundles ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Server-Side Google AI Proxy**: Routed Google AI text generation, multimodal analysis, image generation, and speech requests through an authenticated backend route (`POST /api/proxy/google/generate`), avoiding direct client exposure of server-side Gemini API keys ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Protected Upload Static Serving**: Enforced authenticated session checks (`requireAuth`) on `/storage/uploads` and legacy `/uploads` static file routes to block unauthorized asset retrieval ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Installer Information Disclosure Hardening**: Redacted administrator user identity and absolute filesystem paths from public installer status and summary endpoints (`/api/app/install/status`, `/api/app/install/summary`), and fully masked runtime configuration secrets ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Generic Internal Error Shielding**: Replaced unhandled server error messages with safe generic client responses (`Internal server error`) to prevent leaking internal exception traces, database structures, and runtime internals ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
 
 ### ⚡ Infrastructure & Architecture
-- **Streaming Zip Decompression (`yauzl`)**: Migrated installer upload processing from in-memory buffers to streaming disk-backed extraction (`storage/.install-upload-*`), safely handling large multi-hundred-megabyte archives up to 1 GB without Node.js heap exhaustion.
-- **Unified Backup/Restore Engine**: Extracted core backup parsing, topological table ordering, and path traversal security sanitization into a shared utility ([`server/utils/backupRestore.js`](./server/utils/backupRestore.js)), eliminating code duplication between the installer and admin disaster recovery routes.
+- **Streaming Zip Decompression (`yauzl`)**: Migrated installer upload processing from in-memory buffers to streaming disk-backed extraction (`storage/.install-upload-*`), safely handling large multi-hundred-megabyte archives up to 1 GB without Node.js heap exhaustion ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Unified Backup/Restore Engine**: Extracted core backup parsing, topological table ordering, and path traversal security sanitization into a shared utility ([`server/utils/backupRestore.js`](./server/utils/backupRestore.js)), eliminating code duplication between the installer and admin disaster recovery routes ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
 
 ### 📖 Documentation & Operations
-- **Manual Migration Guide**: Added [`docs/migration.md`](./docs/migration.md) providing step-by-step procedures for live installer migration, offline zero-downtime database cutovers, and baseline-plus-incremental restore chains.
-- **Environment Reference Guide**: Added [`docs/environment.md`](./docs/environment.md) documenting all security, authentication, AI provider, and chat ingestion configuration variables.
-- **README Cross-References**: Updated [`README.md`](./README.md) with quick links to migration and manual restore procedures.
-- **Version Bump**: Bumped package manifests to `0.16.101`.
+- **Manual Migration Guide**: Added [`docs/migration.md`](./docs/migration.md) providing step-by-step procedures for live installer migration, offline zero-downtime database cutovers, and baseline-plus-incremental restore chains ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Environment Reference Guide**: Added [`docs/environment.md`](./docs/environment.md) documenting all security, authentication, AI provider, and chat ingestion configuration variables ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **README Cross-References**: Updated [`README.md`](./README.md) with quick links to migration and manual restore procedures ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
+- **Version Bump**: Bumped package manifests to `0.16.101` ([`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571)).
 
 ---
 
@@ -83,6 +83,7 @@ For internal technical implementation details and architecture notes, see [CHANG
 
 | Commit | Date | Summary |
 | :--- | :--- | :--- |
+| [`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571) | 2026-10-29 | release: bump to 0.16.101, add installer backup migration, and security data exposure hardening |
 | [`a881f9c`](https://github.com/rontea/AIMANA-Asparagus/commit/a881f9c) | 2026-10-20 | docs(changelog): format changelog with clear visual hierarchy, highlights, and commit table |
 | [`3f68dcf`](https://github.com/rontea/AIMANA-Asparagus/commit/3f68dcf) | 2026-10-20 | docs(changelog): sanitize commits to match AIMANA-Asparagus git history |
 | [`d4ce1c9`](https://github.com/rontea/AIMANA-Asparagus/commit/d4ce1c9) | 2026-10-20 | docs(changelog): record commit id 9d999f0 for 0.16.100 release |

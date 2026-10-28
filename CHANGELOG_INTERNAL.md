@@ -6,7 +6,7 @@ For user-facing release notes and high-level feature summaries, see [CHANGELOG.m
 
 ---
 
-## [0.16.101] - 2026-10-29 (Branch: `dev/migration`)
+## [0.16.101] - 2026-10-29 (Release Commit: [`5c0f571`](https://github.com/rontea/AIMANA-Asparagus/commit/5c0f571))
 
 ### Features and Functionality
 
